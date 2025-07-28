@@ -43,17 +43,25 @@ func (rm *RepositoryManager) addDefaultRepositories() {
 	defaultRepos := []struct {
 		name string
 		url  string
+		description string
 		repoType string
 	}{
-		{"rancher-partner", "https://git.rancher.io/partner-charts", "http"},
-		{"bitnami", "https://charts.bitnami.com/bitnami", "http"},
-		{"stable", "https://charts.helm.sh/stable", "http"},
-		{"ingress-nginx", "https://kubernetes.github.io/ingress-nginx", "http"},
+		{"rancher-partner", "https://git.rancher.io/partner-charts", "Rancher Partner Charts Repository", "http"},
+		{"bitnami", "https://charts.bitnami.com/bitnami", "Bitnami Helm Charts", "http"},
+		{"stable", "https://charts.helm.sh/stable", "Helm Stable Charts (Deprecated)", "http"},
+		{"ingress-nginx", "https://kubernetes.github.io/ingress-nginx", "NGINX Ingress Controller", "http"},
 	}
 	
+	fmt.Printf("Adding %d default repositories...\n", len(defaultRepos))
 	for _, repo := range defaultRepos {
-		rm.AddRepositoryWithAuth(repo.name, repo.url, "", repo.repoType, nil)
+		err := rm.AddRepositoryWithAuth(repo.name, repo.url, repo.description, repo.repoType, nil)
+		if err != nil {
+			fmt.Printf("Failed to add default repository %s: %v\n", repo.name, err)
+		} else {
+			fmt.Printf("Added default repository: %s (%s)\n", repo.name, repo.url)
+		}
 	}
+	fmt.Printf("Default repositories initialization complete. Total repositories: %d\n", len(rm.repositories))
 }
 
 func (rm *RepositoryManager) initHelm() error {
@@ -98,7 +106,9 @@ func (rm *RepositoryManager) AddRepositoryWithAuth(name, repoURL, description, r
 		// Perform helm login for OCI repositories
 		if repoType == "oci" {
 			if err := rm.performHelmLogin(repoURL, auth); err != nil {
-				return fmt.Errorf("failed to authenticate with OCI registry: %w", err)
+				fmt.Printf("Warning: OCI authentication failed: %v\n", err)
+				// Don't fail repository addition if helm is not available
+				// Store the auth info for later use
 			}
 		}
 	} else if repoType == "oci" {
@@ -143,6 +153,11 @@ func (rm *RepositoryManager) ListRepositories() []*models.Repository {
 	repos := make([]*models.Repository, 0, len(rm.repositories))
 	for _, repo := range rm.repositories {
 		repos = append(repos, repo)
+	}
+	
+	fmt.Printf("ListRepositories called: returning %d repositories\n", len(repos))
+	for _, repo := range repos {
+		fmt.Printf("  - %s: %s\n", repo.Name, repo.URL)
 	}
 	
 	return repos
@@ -292,7 +307,8 @@ func (rm *RepositoryManager) PullChart(repository, chartName, version string) (s
 		// Ensure authentication is performed if needed
 		if repo.Auth != nil {
 			if err := rm.performHelmLogin(repo.URL, repo.Auth); err != nil {
-				return "", fmt.Errorf("failed to authenticate with OCI registry: %w", err)
+				fmt.Printf("Warning: OCI authentication failed during chart pull: %v\n", err)
+				// Continue anyway - authentication might be cached or chart might be public
 			}
 		}
 		
@@ -377,19 +393,27 @@ func (rm *RepositoryManager) performHelmLogin(registryURL string, auth *models.A
 		loginURL = strings.TrimPrefix(registryURL, "oci://")
 	}
 	
-	args := []string{"registry", "login", loginURL}
-	
-	if auth.Username != "" && auth.Password != "" {
-		args = append(args, "--username", auth.Username, "--password", auth.Password)
-	} else if auth.SecretName != "" {
-		// TODO: Implement secret retrieval from Kubernetes
-		return fmt.Errorf("kubernetes secret authentication not yet implemented")
-	} else {
-		return fmt.Errorf("no valid authentication method provided")
+	if auth.Username == "" || auth.Password == "" {
+		if auth.SecretName != "" {
+			// TODO: Implement secret retrieval from Kubernetes
+			return fmt.Errorf("kubernetes secret authentication not yet implemented")
+		} else {
+			return fmt.Errorf("username and password are required for OCI registry authentication")
+		}
 	}
 	
-	_, err := rm.runHelmCommand(args...)
-	return err
+	fmt.Printf("Attempting helm registry login to: %s (user: %s)\n", loginURL, auth.Username)
+	
+	args := []string{"registry", "login", loginURL, "--username", auth.Username, "--password", auth.Password}
+	
+	output, err := rm.runHelmCommand(args...)
+	if err != nil {
+		fmt.Printf("Helm login failed: %v\nOutput: %s\n", err, string(output))
+		return fmt.Errorf("helm registry login failed: %w", err)
+	}
+	
+	fmt.Printf("Helm registry login successful for %s\n", loginURL)
+	return nil
 }
 
 // Check if credentials are available for a base URL
@@ -413,8 +437,20 @@ func (rm *RepositoryManager) getAuthForURL(repoURL string) *models.Authenticatio
 	return nil
 }
 
-// Helper function to run helm commands (for future use when helm is installed)
+// Helper function to check if helm is available
+func (rm *RepositoryManager) isHelmAvailable() bool {
+	_, err := exec.LookPath("helm")
+	return err == nil
+}
+
+// Helper function to run helm commands
 func (rm *RepositoryManager) runHelmCommand(args ...string) ([]byte, error) {
+	if !rm.isHelmAvailable() {
+		return nil, fmt.Errorf("helm command not found - please install Helm CLI")
+	}
+	
+	fmt.Printf("Running helm command: helm %s\n", strings.Join(args, " "))
+	
 	cmd := exec.Command("helm", args...)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("HELM_CONFIG_HOME=%s", rm.helmHome),

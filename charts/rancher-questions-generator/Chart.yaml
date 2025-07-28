@@ -1,0 +1,25 @@
+apiVersion: v2
+name: rancher-questions-generator
+description: A professional-grade web application for creating questions.yaml files for Helm charts with an intuitive drag-and-drop interface
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+home: https://github.com/your-username/rancher-questions-generator
+sources:
+  - https://github.com/your-username/rancher-questions-generator
+maintainers:
+  - name: Claude Code
+    email: noreply@anthropic.com
+keywords:
+  - rancher
+  - helm
+  - questions
+  - charts
+  - kubernetes
+  - form-builder
+  - ui
+annotations:
+  category: Development Tools
+  catalog.cattle.io/certified: rancher
+  catalog.cattle.io/namespace: rancher-questions-generator
+  catalog.cattle.io/release-name: rancher-questions-generator

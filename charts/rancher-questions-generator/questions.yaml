@@ -1,0 +1,270 @@
+questions:
+  # Basic Configuration
+  - variable: global.imagePullSecrets
+    label: "Image Pull Secrets"
+    description: "List of image pull secrets for private registries"
+    type: string
+    group: "Container Images"
+    
+  # Load Balancer Configuration
+  - variable: loadBalancer.enabled
+    label: "Enable Load Balancer"
+    description: "Create a LoadBalancer service for external access"
+    type: boolean
+    default: true
+    group: "Networking"
+    
+  - variable: loadBalancer.service.type
+    label: "Load Balancer Service Type"
+    description: "Type of service to create"
+    type: enum
+    default: "LoadBalancer"
+    options:
+      - "LoadBalancer"
+      - "NodePort"
+      - "ClusterIP"
+    group: "Networking"
+    show_if: "loadBalancer.enabled=true"
+    
+  - variable: loadBalancer.service.port
+    label: "Load Balancer Port"
+    description: "Port for the load balancer service"
+    type: int
+    default: 80
+    min: 1
+    max: 65535
+    group: "Networking"
+    show_if: "loadBalancer.enabled=true"
+
+  # Ingress Configuration
+  - variable: ingress.enabled
+    label: "Enable Ingress"
+    description: "Create an Ingress resource for domain-based access"
+    type: boolean
+    default: false
+    group: "Networking"
+    
+  - variable: ingress.className
+    label: "Ingress Class Name"
+    description: "Ingress class to use (nginx, traefik, etc.)"
+    type: string
+    default: ""
+    group: "Networking"
+    show_if: "ingress.enabled=true"
+    
+  - variable: ingress.hosts[0].host
+    label: "Hostname"
+    description: "Hostname for the ingress (e.g., questions.example.com)"
+    type: hostname
+    default: "rancher-questions-generator.local"
+    group: "Networking"
+    show_if: "ingress.enabled=true"
+    
+  - variable: ingress.tls[0].secretName
+    label: "TLS Secret Name"
+    description: "Name of the TLS secret for HTTPS"
+    type: string
+    group: "Networking"
+    show_if: "ingress.enabled=true"
+
+  # Backend Configuration
+  - variable: backend.replicas
+    label: "Backend Replicas"
+    description: "Number of backend pod replicas"
+    type: int
+    default: 1
+    min: 1
+    max: 10
+    group: "Backend"
+    
+  - variable: backend.image.repository
+    label: "Backend Image Repository"
+    description: "Docker image repository for the backend"
+    type: string
+    default: "golang"
+    group: "Backend"
+    
+  - variable: backend.image.tag
+    label: "Backend Image Tag"
+    description: "Docker image tag for the backend"
+    type: string
+    default: "1.21-alpine"
+    group: "Backend"
+    
+  - variable: backend.resources.requests.cpu
+    label: "Backend CPU Request"
+    description: "CPU request for backend pods"
+    type: string
+    default: "250m"
+    group: "Backend"
+    
+  - variable: backend.resources.requests.memory
+    label: "Backend Memory Request"
+    description: "Memory request for backend pods"
+    type: string
+    default: "256Mi"
+    group: "Backend"
+    
+  - variable: backend.resources.limits.cpu
+    label: "Backend CPU Limit"
+    description: "CPU limit for backend pods"
+    type: string
+    default: "500m"
+    group: "Backend"
+    
+  - variable: backend.resources.limits.memory
+    label: "Backend Memory Limit"
+    description: "Memory limit for backend pods"
+    type: string
+    default: "512Mi"
+    group: "Backend"
+
+  # Frontend Configuration
+  - variable: frontend.replicas
+    label: "Frontend Replicas"
+    description: "Number of frontend pod replicas"
+    type: int
+    default: 1
+    min: 1
+    max: 10
+    group: "Frontend"
+    
+  - variable: frontend.image.repository
+    label: "Frontend Image Repository"
+    description: "Docker image repository for the frontend"
+    type: string
+    default: "nginx"
+    group: "Frontend"
+    
+  - variable: frontend.image.tag
+    label: "Frontend Image Tag"
+    description: "Docker image tag for the frontend"
+    type: string
+    default: "alpine"
+    group: "Frontend"
+    
+  - variable: frontend.resources.requests.cpu
+    label: "Frontend CPU Request"
+    description: "CPU request for frontend pods"
+    type: string
+    default: "50m"
+    group: "Frontend"
+    
+  - variable: frontend.resources.requests.memory
+    label: "Frontend Memory Request"
+    description: "Memory request for frontend pods"
+    type: string
+    default: "64Mi"
+    group: "Frontend"
+
+  # Storage Configuration
+  - variable: persistence.enabled
+    label: "Enable Persistent Storage"
+    description: "Enable persistent storage for data retention"
+    type: boolean
+    default: false
+    group: "Storage"
+    
+  - variable: persistence.storageClass
+    label: "Storage Class"
+    description: "Storage class for persistent volumes"
+    type: storageclass
+    group: "Storage"
+    show_if: "persistence.enabled=true"
+    
+  - variable: persistence.size
+    label: "Storage Size"
+    description: "Size of the persistent volume"
+    type: string
+    default: "1Gi"
+    group: "Storage"
+    show_if: "persistence.enabled=true"
+    
+  - variable: persistence.accessMode
+    label: "Access Mode"
+    description: "Access mode for the persistent volume"
+    type: enum
+    default: "ReadWriteOnce"
+    options:
+      - "ReadWriteOnce"
+      - "ReadWriteMany"
+      - "ReadOnlyMany"
+    group: "Storage"
+    show_if: "persistence.enabled=true"
+
+  # Security Configuration
+  - variable: securityContext.runAsUser
+    label: "Run as User ID"
+    description: "User ID to run containers as"
+    type: int
+    default: 1000
+    group: "Security"
+    
+  - variable: securityContext.fsGroup
+    label: "Filesystem Group ID"
+    description: "Group ID for filesystem permissions"
+    type: int
+    default: 2000
+    group: "Security"
+
+  # Service Account
+  - variable: serviceAccount.create
+    label: "Create Service Account"
+    description: "Create a dedicated service account for the application"
+    type: boolean
+    default: true
+    group: "Security"
+    
+  - variable: serviceAccount.name
+    label: "Service Account Name"
+    description: "Name of the service account (leave empty for auto-generation)"
+    type: string
+    default: ""
+    group: "Security"
+    show_if: "serviceAccount.create=true"
+
+  # Autoscaling Configuration
+  - variable: autoscaling.enabled
+    label: "Enable Autoscaling"
+    description: "Enable horizontal pod autoscaling"
+    type: boolean
+    default: false
+    group: "Scaling"
+    
+  - variable: autoscaling.minReplicas
+    label: "Minimum Replicas"
+    description: "Minimum number of replicas for autoscaling"
+    type: int
+    default: 1
+    min: 1
+    max: 100
+    group: "Scaling"
+    show_if: "autoscaling.enabled=true"
+    
+  - variable: autoscaling.maxReplicas
+    label: "Maximum Replicas"
+    description: "Maximum number of replicas for autoscaling"
+    type: int
+    default: 10
+    min: 1
+    max: 100
+    group: "Scaling"
+    show_if: "autoscaling.enabled=true"
+    
+  - variable: autoscaling.targetCPUUtilizationPercentage
+    label: "Target CPU Utilization"
+    description: "Target CPU utilization percentage for autoscaling"
+    type: int
+    default: 80
+    min: 1
+    max: 100
+    group: "Scaling"
+    show_if: "autoscaling.enabled=true"
+
+  # Network Policy
+  - variable: networkPolicy.enabled
+    label: "Enable Network Policy"
+    description: "Enable network policies for security"
+    type: boolean
+    default: false
+    group: "Security"
