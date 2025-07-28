@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backend-service-job
+  namespace: rancher-questions-gen
+spec:
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: docker.io/golang:1.21-alpine
+        command: ["/bin/sh"]
+        args: ["-c", "cd /app && go run ./cmd"]
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PORT
+          value: "8080"
+        volumeMounts:
+        - name: source
+          mountPath: /app
+      volumes:
+      - name: source
+        emptyDir: {}
+      restartPolicy: Never
+  backoffLimit: 0

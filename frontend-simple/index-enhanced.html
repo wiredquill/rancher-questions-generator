@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rancher Questions Generator - Enhanced</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; background: #f5f7fa; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+        
+        /* Header */
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; 
+                 border-radius: 12px; margin-bottom: 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 2.5em; }
+        .header p { margin: 10px 0 0 0; opacity: 0.9; }
+        
+        /* Tabs */
+        .tabs { display: flex; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+               margin-bottom: 20px; overflow hidden; }
+        .tab { padding: 18px 30px; cursor: pointer; border: none; background: none; font-size: 16px; 
+              transition: all 0.3s; flex: 1; text-align: center; }
+        .tab.active { background: #667eea; color: white; }
+        .tab:hover:not(.active) { background: #f8f9fa; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* Sections */
+        .section { margin-bottom: 20px; padding: 30px; background: white; border-radius: 12px; 
+                   box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .section h3 { margin-top: 0; color: #2d3748; display: flex; align-items: center; gap: 10px; }
+        
+        /* Repository Browser */
+        .repo-browser { display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: 60vh; }
+        .repo-list, .chart-list { background: #f8f9fa; padding: 20px; border-radius: 8px; overflow-y: auto; }
+        
+        .repo-item, .chart-item { 
+            margin: 10px 0; padding: 15px; background: white; border: 1px solid #e2e8f0; 
+            border-radius: 8px; cursor: pointer; transition: all 0.2s;
+        }
+        .repo-item:hover, .chart-item:hover { border-color: #667eea; transform: translateY(-1px); 
+                                             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15); }
+        .repo-item.selected, .chart-item.selected { border-color: #667eea; background: #eef2ff; }
+        
+        .chart-meta { font-size: 12px; color: #718096; margin-top: 8px; }
+        .chart-versions { margin-top: 10px; }
+        .version-selector { padding: 6px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 12px; }
+        
+        /* Form Builder */
+        .main-content { display: grid; grid-template-columns: 400px 1fr; gap: 20px; height: 70vh; }
+        .panel { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+                overflow-y: auto; }
+        
+        .values-panel { background: #f8f9fa; }
+        .form-builder { position: relative; }
+        .form-builder.dragover { background: #eef2ff; border: 2px dashed #667eea; }
+        
+        /* Values Display */
+        .values-tree { font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; font-size: 13px; 
+                      line-height: 1.6; }
+        .value-item { 
+            padding: 8px 12px; margin: 3px 0; background: white; border: 1px solid #e2e8f0; 
+            cursor: grab; border-radius: 6px; transition: all 0.2s; display: flex; 
+            justify-content: space-between; align-items: center;
+        }
+        .value-item:hover { background: #eef2ff; border-color: #667eea; }
+        .value-item:active { cursor: grabbing; }
+        
+        .value-path { font-weight: 600; color: #2d3748; }
+        .value-type { font-size: 11px; color: #718096; background: #f7fafc; padding: 2px 6px; 
+                     border-radius: 12px; }
+        .value-default { color: #38a169; font-weight: 500; font-size: 12px; }
+        .value-comment { color: #718096; font-style: italic; font-size: 11px; margin-left: 10px; }
+        
+        /* Questions */
+        .question-item { 
+            margin: 15px 0; padding: 20px; border: 1px solid #667eea; background: #f7fafc; 
+            border-radius: 8px; position: relative; transition: all 0.2s;
+        }
+        .question-item:hover { box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15); }
+        
+        .question-header { display: flex; justify-content: space-between; align-items: flex-start; 
+                          margin-bottom: 12px; }
+        .question-title { font-weight: 600; color: #2d3748; font-size: 16px; }
+        .question-controls { display: flex; gap: 8px; }
+        
+        .question-details { background: white; padding: 12px; border-radius: 6px; font-size: 13px; 
+                          color: #4a5568; }
+        .question-meta { display: flex; gap: 8px; margin-top: 8px; }
+        .meta-tag { background: #edf2f7; color: #4a5568; padding: 4px 8px; border-radius: 12px; 
+                   font-size: 11px; }
+        
+        .question-edit { background: white; margin-top: 15px; padding: 20px; border-radius: 8px; 
+                        border: 1px solid #e2e8f0; display: none; }
+        .question-edit.active { display: block; }
+        
+        /* Quick Add */
+        .quick-add { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; 
+                    padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .quick-add h4 { margin: 0 0 15px 0; }
+        .quick-add-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+        .quick-add-buttons button { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); 
+                                   color: white; padding: 10px 16px; border-radius: 6px; font-size: 14px; }
+        .quick-add-buttons button:hover { background: rgba(255,255,255,0.3); }
+        
+        /* Form Controls */
+        button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; 
+                font-weight: 500; transition: all 0.2s; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5a67d8; }
+        .btn-secondary { background: #718096; color: white; }
+        .btn-secondary:hover { background: #4a5568; }
+        .btn-success { background: #38a169; color: white; }
+        .btn-danger { background: #e53e3e; color: white; }
+        .btn-small { padding: 6px 12px; font-size: 12px; }
+        
+        input, select, textarea { padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; 
+                                 font-size: 14px; transition: border-color 0.2s; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #667eea; 
+                                                   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        input[type="text"], select { width: 250px; }
+        textarea { width: 100%; height: 80px; resize: vertical; font-family: inherit; }
+        
+        .form-row { display: flex; gap: 15px; align-items: center; margin: 15px 0; flex-wrap: wrap; }
+        .form-group { margin: 20px 0; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #2d3748; }
+        
+        /* Messages */
+        .message { padding: 15px; border-radius: 8px; margin: 15px 0; }
+        .loading { background: #edf2f7; color: #4a5568; text-align: center; font-style: italic; }
+        .error { background: #fed7d7; color: #c53030; border: 1px solid #feb2b2; }
+        .success { background: #c6f6d5; color: #2f855a; border: 1px solid #9ae6b4; }
+        .warning { background: #fefcbf; color: #b7791f; border: 1px solid #f6e05e; }
+        .info { background: #bee3f8; color: #2b6cb0; border: 1px solid #90cdf4; }
+        
+        /* Search */
+        .search-help { font-size: 12px; color: #718096; margin-top: 8px; font-style: italic; }
+        
+        /* Drop Zone */
+        .drop-zone { min-height: 120px; border: 2px dashed #cbd5e0; padding: 30px; text-align: center; 
+                    margin: 20px 0; border-radius: 8px; color: #718096; transition: all 0.2s; }
+        .drop-zone.dragover { border-color: #667eea; background: #eef2ff; color: #667eea; }
+        
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; margin: 20px; padding: 30px; border-radius: 12px; 
+                        width: 90%; max-width: 1000px; max-height: 80vh; overflow-y: auto; 
+                        box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; 
+                       margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #e2e8f0; }
+        .close { font-size: 24px; cursor: pointer; color: #718096; }
+        .close:hover { color: #2d3748; }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-content { grid-template-columns: 1fr; height: auto; }
+            .repo-browser { grid-template-columns: 1fr; height: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Rancher Questions Generator</h1>
+            <p>Professional Helm chart questions.yaml authoring tool with enhanced repository management</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('repositories')">📦 Repositories</button>
+            <button class="tab" onclick="showTab('browse')">🔍 Browse Charts</button>
+            <button class="tab" onclick="showTab('direct-url')">🔗 Direct URL</button>
+            <button class="tab" onclick="showTab('builder')" id="builderTab" style="display: none;">⚙️ Form Builder</button>
+        </div>
+
+        <!-- Repository Management Tab -->
+        <div id="repositories" class="tab-content active">
+            <div class="section">
+                <h3>📋 Repository Management</h3>
+                <div class="form-row">
+                    <input type="text" id="repoName" placeholder="Repository Name">
+                    <input type="text" id="repoUrl" placeholder="Repository URL (http://... or oci://...)">
+                    <input type="text" id="repoDescription" placeholder="Description (optional)">
+                </div>
+                <div class="form-row">
+                    <button onclick="toggleAuthSection()">🔐 Add Authentication</button>
+                    <button class="btn-primary" onclick="addRepository()">➕ Add Repository</button>
+                    <button class="btn-secondary" onclick="addCommonRepositories()">⚡ Add Common Repos</button>
+                    <button onclick="promptForSUSERepo()" style="background: #0066cc;">🔒 Add SUSE App Collection</button>
+                </div>
+                
+                <!-- Authentication Section (Hidden by default) -->
+                <div id="authSection" style="display: none; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px;">
+                    <h4>🔐 Authentication</h4>
+                    <div class="form-row">
+                        <input type="text" id="authUsername" placeholder="Username">
+                        <input type="password" id="authPassword" placeholder="Password">
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="authSecret" placeholder="Kubernetes Secret Name (optional)">
+                    </div>
+                    <div class="info">
+                        <strong>💡 Credential Reuse:</strong> For OCI registries like SUSE Application Collection, 
+                        credentials will be automatically reused for all charts from the same base URL 
+                        (e.g., dp.apps.rancher.io).
+                    </div>
+                </div>
+                
+                <div id="repoStatus"></div>
+            </div>
+
+            <div class="section">
+                <h3>📚 Available Repositories</h3>
+                <div id="repositoriesList">
+                    <div class="message loading">Loading repositories...</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>🔍 Search Charts</h3>
+                <div class="form-row">
+                    <input type="text" id="chartSearch" placeholder="Search charts...">
+                    <select id="repoFilter">
+                        <option value="">All Repositories</option>
+                    </select>
+                    <button class="btn-primary" onclick="searchCharts()">🔍 Search</button>
+                </div>
+                <div class="search-help">💡 Use wildcards: nginx*, *sql, *monitoring*</div>
+                <div id="chartsList"></div>
+            </div>
+        </div>
+
+        <!-- Browse Charts Tab -->
+        <div id="browse" class="tab-content">
+            <div class="section">
+                <h3>🔍 Browse Repository Charts</h3>
+                <div class="repo-browser">
+                    <div class="repo-list">
+                        <h4>Select Repository</h4>
+                        <div id="browseRepoList"></div>
+                    </div>
+                    <div class="chart-list">
+                        <h4>Available Charts</h4>
+                        <div id="browseChartList">
+                            <div class="message info">Select a repository to view available charts</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Direct URL Tab -->
+        <div id="direct-url" class="tab-content">
+            <div class="section">
+                <h3>🔗 Direct Chart URL</h3>
+                <p>Enter a direct URL to a Helm chart (.tgz)</p>
+                <div class="form-row">
+                    <input type="text" id="chartUrl" placeholder="https://example.com/chart.tgz">
+                    <button class="btn-primary" onclick="loadChartFromUrl()">📥 Load Chart</button>
+                </div>
+                <div id="urlStatus"></div>
+            </div>
+        </div>
+
+        <!-- Form Builder Tab -->
+        <div id="builder" class="tab-content">
+            <div class="main-content">
+                <div class="panel values-panel">
+                    <h3>📋 Values Explorer</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label>
+                            <input type="radio" name="valuesView" value="tree" checked onchange="toggleValuesDisplay()"> Tree View
+                        </label>
+                        <label style="margin-left: 15px;">
+                            <input type="radio" name="valuesView" value="raw" onchange="toggleValuesDisplay()"> Raw YAML
+                        </label>
+                    </div>
+                    <div id="valuesContent"></div>
+                </div>
+                
+                <div class="panel form-builder" id="formBuilder" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>🛠️ Form Builder</h3>
+                        <div>
+                            <button class="btn-secondary btn-small" onclick="previewQuestions()">👀 Preview</button>
+                            <button class="btn-primary btn-small" onclick="downloadYaml()">📥 Download</button>
+                        </div>
+                    </div>
+                    
+                    <div class="quick-add">
+                        <h4>⚡ Quick Add Common Questions</h4>
+                        <div class="quick-add-buttons">
+                            <button onclick="quickAddService()">🌐 Service</button>
+                            <button onclick="quickAddStorage()">💾 Storage</button>
+                            <button onclick="quickAddIngress()">🔗 Ingress</button>
+                            <button onclick="quickAddResources()">⚡ Resources</button>
+                            <button onclick="quickAddReplicas()">📊 Replicas</button>
+                        </div>
+                    </div>
+                    
+                    <div class="drop-zone" id="dropZone">
+                        <p>🎯 <strong>Drop values here</strong> to create questions<br>
+                        <small>or use the Quick Add buttons above</small></p>
+                    </div>
+                    
+                    <div id="questionsContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>👀 Live Preview - Questions in Action</h2>
+                <span class="close" onclick="closePreview()">&times;</span>
+            </div>
+            <div id="previewContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let chartData = null;
+        let selectedChart = null;
+        let storageClasses = [];
+        let repositories = [];
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRepositories();
+            loadStorageClasses();
+            searchCharts();
+        });
+
+        // Tab management
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'browse') {
+                loadBrowseRepositories();
+            }
+        }
+
+        // Repository management
+        async function loadRepositories() {
+            try {
+                const response = await fetch('/api/repositories');
+                const data = await response.json();
+                repositories = data.repositories || [];
+                
+                displayRepositories();
+                updateRepoFilter();
+            } catch (error) {
+                showMessage('repositoriesList', 'error', `Error loading repositories: ${error.message}`);
+            }
+        }
+
+        function displayRepositories() {
+            const container = document.getElementById('repositoriesList');
+            const filterSelect = document.getElementById('repoFilter');
+            
+            if (repositories.length > 0) {
+                container.innerHTML = repositories.map(repo => `
+                    <div class="repo-item">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${repo.name}</strong>
+                                <div style="font-size: 12px; color: #718096; margin-top: 4px;">${repo.url}</div>
+                                <div style="font-size: 11px; color: #a0aec0; margin-top: 2px;">
+                                    Added: ${new Date(repo.added_at).toLocaleDateString()}
+                                </div>
+                            </div>
+                            <button class="btn-danger btn-small" onclick="removeRepository('${repo.name}')">Remove</button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Update filter dropdown
+                filterSelect.innerHTML = '<option value="">All Repositories</option>' +
+                    repositories.map(repo => 
+                        `<option value="${repo.name}">${repo.name}</option>`
+                    ).join('');
+            } else {
+                container.innerHTML = `
+                    <div class="message info">
+                        <p>No repositories configured yet.</p>
+                        <button class="btn-primary" onclick="addCommonRepositories()">Add Common Repositories</button>
+                    </div>
+                `;
+            }
+        }
+
+        function updateRepoFilter() {
+            const filterSelect = document.getElementById('repoFilter');
+            filterSelect.innerHTML = '<option value="">All Repositories</option>' +
+                repositories.map(repo => 
+                    `<option value="${repo.name}">${repo.name}</option>`
+                ).join('');
+        }
+
+        function toggleAuthSection() {
+            const authSection = document.getElementById('authSection');
+            const isVisible = authSection.style.display !== 'none';
+            authSection.style.display = isVisible ? 'none' : 'block';
+        }
+
+        async function addRepository() {
+            const name = document.getElementById('repoName').value.trim();
+            const url = document.getElementById('repoUrl').value.trim();
+            const description = document.getElementById('repoDescription').value.trim();
+            
+            if (!name || !url) {
+                showMessage('repoStatus', 'error', 'Please provide both name and URL');
+                return;
+            }
+
+            // Check if authentication section is visible and get credentials
+            const authSection = document.getElementById('authSection');
+            let auth = null;
+            
+            if (authSection.style.display !== 'none') {
+                const username = document.getElementById('authUsername').value.trim();
+                const password = document.getElementById('authPassword').value.trim();
+                const secretName = document.getElementById('authSecret').value.trim();
+                
+                if (username && password) {
+                    auth = { username, password };
+                } else if (secretName) {
+                    auth = { secret_name: secretName };
+                } else if (url.startsWith('oci://')) {
+                    showMessage('repoStatus', 'error', 'OCI registries require authentication credentials');
+                    return;
+                }
+            }
+
+            const payload = { name, url };
+            if (description) payload.description = description;
+            if (auth) payload.auth = auth;
+
+            try {
+                const response = await fetch('/api/repositories', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    showMessage('repoStatus', 'success', 'Repository added successfully!');
+                    // Clear form fields
+                    document.getElementById('repoName').value = '';
+                    document.getElementById('repoUrl').value = '';
+                    document.getElementById('repoDescription').value = '';
+                    document.getElementById('authUsername').value = '';
+                    document.getElementById('authPassword').value = '';
+                    document.getElementById('authSecret').value = '';
+                    // Hide auth section
+                    authSection.style.display = 'none';
+                    loadRepositories();
+                } else {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to add repository');
+                }
+            } catch (error) {
+                showMessage('repoStatus', 'error', `Error: ${error.message}`);
+            }
+        }
+
+        async function removeRepository(name) {
+            if (!confirm(`Remove repository '${name}'?`)) return;
+
+            try {
+                const response = await fetch(`/api/repositories/${name}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadRepositories();
+                } else {
+                    const data = await response.json();
+                    alert(`Error: ${data.error || 'Failed to remove repository'}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        async function addCommonRepositories() {
+            // The backend now initializes with default repositories
+            loadRepositories();
+        }
+
+        async function promptForSUSERepo() {
+            const username = prompt('Enter your SUSE Application Collection username:', 'erquill@suse.com');
+            if (!username) return;
+            
+            const password = prompt('Enter your SUSE Application Collection password:', 'aG56ZGtvZnljeHZiZ2J5dHBmaXhvbGZtdGJ3enFwcGpucXN1eWxzdmVxeXpqaXZzcG9hbXZkbXNzd3FzbWplcQ==');
+            if (!password) return;
+            
+            const payload = {
+                name: 'suse-application-collection',
+                url: 'oci://dp.apps.rancher.io/charts',
+                description: 'SUSE Application Collection - Enterprise applications for Rancher',
+                auth: { username, password }
+            };
+            
+            try {
+                const response = await fetch('/api/repositories', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    showMessage('repoStatus', 'success', 'SUSE Application Collection added successfully! Credentials will be reused for all charts from dp.apps.rancher.io');
+                    loadRepositories();
+                } else {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to add SUSE Application Collection');
+                }
+            } catch (error) {
+                showMessage('repoStatus', 'error', `Failed to add SUSE Application Collection: ${error.message}`);
+            }
+        }
+
+        // Chart search and browsing
+        async function searchCharts() {
+            const query = document.getElementById('chartSearch').value.trim();
+            const repository = document.getElementById('repoFilter').value;
+
+            try {
+                const params = new URLSearchParams();
+                if (query) params.append('query', query);
+                if (repository) params.append('repository', repository);
+
+                const response = await fetch(`/api/charts/search?${params}`);
+                const data = await response.json();
+
+                displayCharts(data.charts || [], 'chartsList');
+            } catch (error) {
+                showMessage('chartsList', 'error', `Error searching charts: ${error.message}`);
+            }
+        }
+
+        function displayCharts(charts, containerId) {
+            const container = document.getElementById(containerId);
+            
+            if (charts.length > 0) {
+                container.innerHTML = charts.map(chart => `
+                    <div class="chart-item" onclick="selectChart('${chart.repository}', '${chart.name}', '${chart.version}')">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong>${chart.name}</strong>
+                                <span style="color: #718096; margin-left: 10px;">v${chart.version}</span>
+                                <div class="chart-meta">
+                                    <div>Repository: <strong>${chart.repository}</strong></div>
+                                    ${chart.app_version ? `<div>App Version: ${chart.app_version}</div>` : ''}
+                                    ${chart.description ? `<div style="margin-top: 8px;">${chart.description}</div>` : ''}
+                                    ${chart.keywords ? `<div style="margin-top: 4px;">Keywords: ${chart.keywords.join(', ')}</div>` : ''}
+                                </div>
+                            </div>
+                            ${chart.versions ? `
+                                <div class="chart-versions">
+                                    <select class="version-selector" onclick="event.stopPropagation();" 
+                                            onchange="updateSelectedVersion('${chart.repository}', '${chart.name}', this.value)">
+                                        ${chart.versions.map(v => 
+                                            `<option value="${v}" ${v === chart.version ? 'selected' : ''}>${v}</option>`
+                                        ).join('')}
+                                    </select>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Add process button if in search results
+                if (containerId === 'chartsList') {
+                    container.innerHTML += `
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button id="processBtn" class="btn-primary" onclick="processSelectedChart()" style="display: none;">
+                                🚀 Process Selected Chart
+                            </button>
+                        </div>
+                    `;
+                }
+            } else {
+                container.innerHTML = '<div class="message info">No charts found. Try a different search term.</div>';
+            }
+        }
+
+        function selectChart(repository, chart, version) {
+            // Remove previous selection
+            document.querySelectorAll('.chart-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // Add selection to clicked item
+            event.currentTarget.classList.add('selected');
+            
+            selectedChart = { repository, chart, version };
+            
+            // Show process button
+            const processBtn = document.getElementById('processBtn');
+            if (processBtn) {
+                processBtn.style.display = 'inline-block';
+            }
+        }
+
+        function updateSelectedVersion(repository, chart, version) {
+            if (selectedChart && selectedChart.repository === repository && selectedChart.chart === chart) {
+                selectedChart.version = version;
+            }
+        }
+
+        async function processSelectedChart() {
+            if (!selectedChart) return;
+
+            showMessage('chartsList', 'loading', 'Processing chart...');
+
+            try {
+                const response = await fetch('/api/charts/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(selectedChart)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to process chart');
+                }
+
+                chartData = await response.json();
+                displayChart();
+                
+                // Show builder tab
+                document.getElementById('builderTab').style.display = 'block';
+                showTab('builder');
+                
+                // Clear the loading message
+                const chartsList = document.getElementById('chartsList');
+                const loadingMsg = chartsList.querySelector('.message.loading');
+                if (loadingMsg) loadingMsg.remove();
+                
+            } catch (error) {
+                showMessage('chartsList', 'error', `Error: ${error.message}`);
+            }
+        }
+
+        // Browse repositories
+        async function loadBrowseRepositories() {
+            const container = document.getElementById('browseRepoList');
+            
+            if (repositories.length === 0) {
+                container.innerHTML = '<div class="message info">No repositories available</div>';
+                return;
+            }
+            
+            container.innerHTML = repositories.map(repo => `
+                <div class="repo-item" onclick="browseRepository('${repo.name}')">
+                    <strong>${repo.name}</strong>
+                    <div style="font-size: 12px; color: #718096; margin-top: 4px;">
+                        ${repo.url}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function browseRepository(repoName) {
+            // Update selection
+            document.querySelectorAll('#browseRepoList .repo-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            const container = document.getElementById('browseChartList');
+            container.innerHTML = '<div class="message loading">Loading charts...</div>';
+            
+            try {
+                const response = await fetch(`/api/repositories/${repoName}/charts`);
+                const data = await response.json();
+                
+                displayCharts(data.charts || [], 'browseChartList');
+            } catch (error) {
+                container.innerHTML = `<div class="message error">Error loading charts: ${error.message}</div>`;
+            }
+        }
+
+        // Direct URL processing (legacy)
+        async function loadChartFromUrl() {
+            const url = document.getElementById('chartUrl').value.trim();
+            if (!url) return;
+
+            showMessage('urlStatus', 'loading', 'Processing chart...');
+
+            try {
+                const response = await fetch('/api/chart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to process chart');
+                }
+
+                chartData = await response.json();
+                displayChart();
+                
+                document.getElementById('builderTab').style.display = 'block';
+                showTab('builder');
+                
+                showMessage('urlStatus', 'success', 'Chart loaded successfully!');
+            } catch (error) {
+                showMessage('urlStatus', 'error', `Error: ${error.message}`);
+            }
+        }
+
+        // Form builder functions
+        function displayChart() {
+            displayValues(chartData.values);
+            displayQuestions(chartData.questions.questions);
+        }
+
+        function toggleValuesDisplay() {
+            const view = document.querySelector('input[name="valuesView"]:checked').value;
+            const container = document.getElementById('valuesContent');
+            
+            if (view === 'raw') {
+                container.innerHTML = `<pre style="background: #f8f9fa; padding: 15px; border-radius: 6px; font-size: 12px; overflow-x: auto;">${JSON.stringify(chartData.values, null, 2)}</pre>`;
+            } else {
+                displayValues(chartData.values);
+            }
+        }
+
+        function displayValues(values) {
+            const container = document.getElementById('valuesContent');
+            container.innerHTML = '';
+            container.className = 'values-tree';
+            
+            function renderValues(obj, path = '', level = 0) {
+                for (const [key, value] of Object.entries(obj)) {
+                    const fullPath = path ? `${path}.${key}` : key;
+                    
+                    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                        const div = document.createElement('div');
+                        div.style.marginLeft = level * 20 + 'px';
+                        div.style.marginTop = '8px';
+                        div.innerHTML = `<strong style="color: #4a5568;">${key}/</strong> <span class="value-type">object</span>`;
+                        container.appendChild(div);
+                        renderValues(value, fullPath, level + 1);
+                    } else {
+                        const div = document.createElement('div');
+                        div.className = 'value-item';
+                        div.draggable = true;
+                        div.dataset.path = fullPath;
+                        div.dataset.value = JSON.stringify(value);
+                        div.style.marginLeft = level * 20 + 'px';
+                        
+                        div.innerHTML = `
+                            <div>
+                                <span class="value-path">${fullPath}</span>
+                                <span class="value-type">${Array.isArray(value) ? 'array' : typeof value}</span>
+                            </div>
+                            <div class="value-default">${Array.isArray(value) ? `[${value.length} items]` : String(value)}</div>
+                        `;
+                        
+                        div.ondragstart = (e) => {
+                            e.dataTransfer.setData('text/plain', JSON.stringify({
+                                path: fullPath,
+                                value: value
+                            }));
+                            div.classList.add('dragging');
+                        };
+                        
+                        div.ondragend = () => {
+                            div.classList.remove('dragging');
+                        };
+                        
+                        container.appendChild(div);
+                    }
+                }
+            }
+            
+            renderValues(values);
+        }
+
+        function displayQuestions(questions) {
+            const container = document.getElementById('questionsContent');
+            
+            if (!questions || questions.length === 0) {
+                container.innerHTML = '<div class="message info">No questions yet. Drag values from the left panel or use Quick Add buttons.</div>';
+                return;
+            }
+            
+            container.innerHTML = questions.map((question, index) => `
+                <div class="question-item" data-index="${index}">
+                    <div class="question-header">
+                        <div class="question-title">${question.label}</div>
+                        <div class="question-controls">
+                            <button class="btn-secondary btn-small" onclick="editQuestion(${index})">✏️</button>
+                            <button class="btn-danger btn-small" onclick="removeQuestion(${index})">🗑️</button>
+                        </div>
+                    </div>
+                    
+                    <div class="question-details">
+                        <div><strong>Variable:</strong> ${question.variable}</div>
+                        ${question.description ? `<div><strong>Description:</strong> ${question.description}</div>` : ''}
+                        <div class="question-meta">
+                            <span class="meta-tag">Type: ${question.type || 'string'}</span>
+                            <span class="meta-tag">Group: ${question.group || 'General'}</span>
+                            ${question.required ? '<span class="meta-tag" style="background: #fed7d7; color: #c53030;">Required</span>' : ''}
+                            ${question.default ? `<span class="meta-tag">Default: ${question.default}</span>` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="question-edit" id="edit-${index}">
+                        <div class="form-group">
+                            <label>Label</label>
+                            <input type="text" id="label-${index}" value="${question.label}">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="description-${index}">${question.description || ''}</textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Type</label>
+                                <select id="type-${index}">
+                                    <option value="string" ${question.type === 'string' ? 'selected' : ''}>String</option>
+                                    <option value="int" ${question.type === 'int' ? 'selected' : ''}>Integer</option>
+                                    <option value="boolean" ${question.type === 'boolean' ? 'selected' : ''}>Boolean</option>
+                                    <option value="enum" ${question.type === 'enum' ? 'selected' : ''}>Dropdown</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Group</label>
+                                <input type="text" id="group-${index}" value="${question.group || 'General'}">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label>
+                                <input type="checkbox" id="required-${index}" ${question.required ? 'checked' : ''}> Required
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <button class="btn-primary" onclick="saveQuestion(${index})">💾 Save</button>
+                            <button class="btn-secondary" onclick="cancelEdit(${index})">❌ Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Drag and drop
+        function allowDrop(ev) {
+            ev.preventDefault();
+            document.getElementById('dropZone').classList.add('dragover');
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            document.getElementById('dropZone').classList.remove('dragover');
+            
+            const data = JSON.parse(ev.dataTransfer.getData('text/plain'));
+            addQuestion(data.path, data.value);
+        }
+
+        // Remove dragover when leaving
+        document.addEventListener('dragleave', (e) => {
+            if (e.target.id === 'dropZone') {
+                e.target.classList.remove('dragover');
+            }
+        });
+
+        function addQuestion(path, value, customData = {}) {
+            const newQuestion = {
+                variable: path,
+                label: customData.label || path.split('.').pop().replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+                description: customData.description || '',
+                type: customData.type || (typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'int' : 'string'),
+                required: customData.required || false,
+                group: customData.group || 'General',
+                ...customData
+            };
+            
+            chartData.questions.questions.push(newQuestion);
+            displayQuestions(chartData.questions.questions);
+            updateBackend();
+        }
+
+        // Question management
+        function editQuestion(index) {
+            const editForm = document.getElementById(`edit-${index}`);
+            editForm.classList.add('active');
+        }
+
+        function cancelEdit(index) {
+            const editForm = document.getElementById(`edit-${index}`);
+            editForm.classList.remove('active');
+        }
+
+        function saveQuestion(index) {
+            const question = chartData.questions.questions[index];
+            
+            question.label = document.getElementById(`label-${index}`).value;
+            question.description = document.getElementById(`description-${index}`).value;
+            question.type = document.getElementById(`type-${index}`).value;
+            question.group = document.getElementById(`group-${index}`).value;
+            question.required = document.getElementById(`required-${index}`).checked;
+            
+            displayQuestions(chartData.questions.questions);
+            updateBackend();
+        }
+
+        function removeQuestion(index) {
+            if (confirm('Remove this question?')) {
+                chartData.questions.questions.splice(index, 1);
+                displayQuestions(chartData.questions.questions);
+                updateBackend();
+            }
+        }
+
+        // Quick add functions
+        async function quickAddService() {
+            addQuestion('service.type', 'ClusterIP', {
+                label: 'Service Type',
+                description: 'Kubernetes service type for exposing the application',
+                type: 'enum',
+                options: ['ClusterIP', 'NodePort', 'LoadBalancer'],
+                group: 'Networking'
+            });
+        }
+
+        async function quickAddStorage() {
+            await loadStorageClasses();
+            const defaultClass = storageClasses.find(sc => sc.is_default);
+            
+            addQuestion('persistence.storageClass', defaultClass?.name || 'standard', {
+                label: 'Storage Class',
+                description: 'Storage class for persistent volumes',
+                type: 'enum',
+                options: storageClasses.map(sc => sc.name),
+                group: 'Storage'
+            });
+        }
+
+        function quickAddIngress() {
+            addQuestion('ingress.enabled', false, {
+                label: 'Enable Ingress',
+                description: 'Enable ingress for external access',
+                type: 'boolean',
+                group: 'Networking'
+            });
+        }
+
+        function quickAddResources() {
+            addQuestion('resources.requests.memory', '256Mi', {
+                label: 'Memory Request',
+                description: 'Minimum memory allocation',
+                type: 'string',
+                group: 'Resources'
+            });
+        }
+
+        function quickAddReplicas() {
+            addQuestion('replicaCount', 1, {
+                label: 'Replica Count',
+                description: 'Number of pod replicas',
+                type: 'int',
+                group: 'Scaling'
+            });
+        }
+
+        // Storage classes
+        async function loadStorageClasses() {
+            try {
+                const response = await fetch('/api/storage-classes');
+                const data = await response.json();
+                storageClasses = data.storage_classes || [];
+            } catch (error) {
+                console.error('Error loading storage classes:', error);
+                storageClasses = [{ name: 'standard', is_default: true }];
+            }
+        }
+
+        // Backend sync
+        async function updateBackend() {
+            if (!chartData) return;
+            
+            try {
+                await fetch(`/api/chart/${chartData.session_id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(chartData.questions)
+                });
+            } catch (error) {
+                console.error('Error updating questions:', error);
+            }
+        }
+
+        // Download and preview
+        async function downloadYaml() {
+            if (!chartData) return;
+            
+            try {
+                const response = await fetch(`/api/chart/${chartData.session_id}/q`);
+                const yaml = await response.text();
+                
+                const blob = new Blob([yaml], { type: 'application/x-yaml' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'questions.yaml';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                alert('Error downloading YAML: ' + error.message);
+            }
+        }
+
+        async function previewQuestions() {
+            if (!chartData) return;
+            
+            const modal = document.getElementById('previewModal');
+            const content = document.getElementById('previewContent');
+            
+            // Generate preview HTML
+            const questions = chartData.questions.questions;
+            content.innerHTML = `
+                <div style="max-width: 600px; margin: 0 auto;">
+                    <h3 style="text-align: center; margin-bottom: 30px;">📋 Form Preview</h3>
+                    ${questions.map(q => `
+                        <div style="margin: 25px 0; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8f9fa;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 8px;">
+                                ${q.label} ${q.required ? '<span style="color: #e53e3e;">*</span>' : ''}
+                            </label>
+                            ${q.description ? `<p style="color: #718096; font-size: 14px; margin: 0 0 12px 0;">${q.description}</p>` : ''}
+                            ${generatePreviewInput(q)}
+                            <div style="margin-top: 8px; font-size: 12px; color: #a0aec0;">
+                                Variable: ${q.variable} | Type: ${q.type || 'string'}${q.group ? ` | Group: ${q.group}` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            modal.classList.add('active');
+        }
+
+        function generatePreviewInput(question) {
+            const baseStyle = 'width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;';
+            
+            switch (question.type) {
+                case 'boolean':
+                    return `<label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" ${question.default ? 'checked' : ''}> 
+                        ${question.default ? 'Enabled' : 'Disabled'}
+                    </label>`;
+                case 'int':
+                    return `<input type="number" value="${question.default || ''}" style="${baseStyle}">`;
+                case 'enum':
+                    const options = question.options || ['Option 1', 'Option 2', 'Option 3'];
+                    return `<select style="${baseStyle}">
+                        ${options.map(opt => 
+                            `<option value="${opt}" ${opt === question.default ? 'selected' : ''}>${opt}</option>`
+                        ).join('')}
+                    </select>`;
+                default:
+                    return `<input type="text" value="${question.default || ''}" placeholder="Enter ${question.label.toLowerCase()}" style="${baseStyle}">`;
+            }
+        }
+
+        function closePreview() {
+            document.getElementById('previewModal').classList.remove('active');
+        }
+
+        // Utility functions
+        function showMessage(containerId, type, message) {
+            const container = document.getElementById(containerId);
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.innerHTML = message;
+            
+            // Remove existing messages
+            const existingMessages = container.querySelectorAll('.message');
+            existingMessages.forEach(msg => msg.remove());
+            
+            container.appendChild(messageDiv);
+            
+            // Auto-remove success messages
+            if (type === 'success') {
+                setTimeout(() => messageDiv.remove(), 5000);
+            }
+        }
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('previewModal');
+            if (event.target === modal) {
+                closePreview();
+            }
+        }
+    </script>
+</body>
+</html>

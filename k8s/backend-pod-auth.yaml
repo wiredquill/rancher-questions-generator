@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: backend-server-auth
+  namespace: rancher-questions-gen
+  labels:
+    app: rancher-questions-generator-backend
+spec:
+  containers:
+  - name: backend
+    image: golang:1.21-alpine
+    command: ["sh"]
+    args: ["-c", "cd /app && go run cmd/main.go"]
+    ports:
+    - containerPort: 8080
+    volumeMounts:
+    - name: source-code
+      mountPath: /app
+    env:
+    - name: PORT
+      value: "8080"
+  initContainers:
+  - name: copy-source
+    image: alpine
+    command: ["sh"]
+    args: ["-c", "cp -r /source/* /app/"]
+    volumeMounts:
+    - name: source-code
+      mountPath: /app
+    - name: host-source
+      mountPath: /source
+  volumes:
+  - name: source-code
+    emptyDir: {}
+  - name: host-source
+    hostPath:
+      path: /Users/erquill/Documents/GitHub/rancher-questions-generator
+      type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service-auth
+  namespace: rancher-questions-gen
+spec:
+  selector:
+    app: rancher-questions-generator-backend
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP

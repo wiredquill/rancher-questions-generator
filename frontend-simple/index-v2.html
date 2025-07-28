@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rancher Questions Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; cursor: pointer; border: none; background: none; font-size: 16px; }
+        .tab.active { border-bottom: 2px solid #007bff; color: #007bff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .section { margin-bottom: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .main-content { display: flex; gap: 20px; }
+        .panel { flex: 1; border: 1px solid #ddd; padding: 20px; height: 500px; overflow-y: auto; }
+        .values-explorer { background: #f9f9f9; }
+        .form-builder { background: #fff; border: 2px dashed #ccc; }
+        .form-builder.dragover { border-color: #007bff; background: #e7f3ff; }
+        .value-item { 
+            padding: 8px; margin: 4px 0; background: white; border: 1px solid #ccc; 
+            cursor: grab; border-radius: 4px;
+        }
+        .value-item:hover { background: #f0f0f0; }
+        .question-item { 
+            margin: 10px 0; padding: 10px; border: 1px solid #007bff; 
+            background: #f8f9fa; border-radius: 4px;
+        }
+        .repo-item, .chart-item { 
+            margin: 10px 0; padding: 15px; border: 1px solid #ddd; 
+            background: #fff; border-radius: 4px; cursor: pointer;
+        }
+        .repo-item:hover, .chart-item:hover { background: #f8f9fa; }
+        .chart-item.selected { border-color: #007bff; background: #e7f3ff; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; border: 1px solid #007bff; background: #007bff; color: white; border-radius: 4px; }
+        button:hover { background: #0056b3; }
+        button.secondary { background: #6c757d; border-color: #6c757d; }
+        button.secondary:hover { background: #545b62; }
+        input[type="text"], select { width: 300px; padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; }
+        .loading { color: #666; font-style: italic; }
+        .error { color: red; background: #ffe6e6; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .success { color: green; background: #e6ffe6; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .form-row { display: flex; gap: 10px; align-items: center; margin: 10px 0; }
+        .chart-details { font-size: 12px; color: #666; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Rancher Questions Generator</h1>
+        <p>Generate questions.yaml files for Helm charts with repository management</p>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('repositories')">Repositories</button>
+            <button class="tab" onclick="showTab('direct-url')">Direct URL</button>
+            <button class="tab" onclick="showTab('builder')" id="builderTab" style="display: none;">Form Builder</button>
+        </div>
+
+        <!-- Repository Management Tab -->
+        <div id="repositories" class="tab-content active">
+            <div class="section">
+                <h3>Add Repository</h3>
+                <div class="form-row">
+                    <input type="text" id="repoName" placeholder="Repository Name (e.g., bitnami)">
+                    <input type="text" id="repoUrl" placeholder="Repository URL">
+                    <button onclick="addRepository()">Add Repository</button>
+                </div>
+                <div id="repoStatus"></div>
+            </div>
+
+            <div class="section">
+                <h3>Repositories</h3>
+                <div id="repositoriesList">
+                    <div class="loading">Loading repositories...</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Search Charts</h3>
+                <div class="form-row">
+                    <input type="text" id="chartSearch" placeholder="Search charts (e.g., nginx, mysql)">
+                    <select id="repoFilter">
+                        <option value="">All Repositories</option>
+                    </select>
+                    <button onclick="searchCharts()">Search</button>
+                </div>
+                <div id="chartsList"></div>
+            </div>
+        </div>
+
+        <!-- Direct URL Tab (Legacy) -->
+        <div id="direct-url" class="tab-content">
+            <div class="section">
+                <h3>Chart URL</h3>
+                <p>Enter a direct URL to a Helm chart (.tgz)</p>
+                <div class="form-row">
+                    <input type="text" id="chartUrl" placeholder="https://example.com/chart.tgz">
+                    <button onclick="loadChartFromUrl()">Load Chart</button>
+                </div>
+                <div id="urlStatus"></div>
+            </div>
+        </div>
+
+        <!-- Form Builder Tab -->
+        <div id="builder" class="tab-content">
+            <div class="main-content">
+                <div class="panel values-explorer">
+                    <h3>Values Explorer</h3>
+                    <p>Drag values to the Form Builder to create questions</p>
+                    <div id="valuesContent"></div>
+                </div>
+                
+                <div class="panel form-builder" id="formBuilder" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Form Builder</h3>
+                        <button onclick="downloadYaml()">Download YAML</button>
+                    </div>
+                    <p>Drop values here to create questions</p>
+                    <div id="questionsContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chartData = null;
+        let selectedChart = null;
+
+        // Tab management
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        // Repository management
+        async function loadRepositories() {
+            try {
+                const response = await fetch('/api/repositories');
+                const data = await response.json();
+                
+                const container = document.getElementById('repositoriesList');
+                const filterSelect = document.getElementById('repoFilter');
+                
+                if (data.repositories && data.repositories.length > 0) {
+                    container.innerHTML = data.repositories.map(repo => `
+                        <div class="repo-item">
+                            <strong>${repo.name}</strong><br>
+                            <small>${repo.url}</small><br>
+                            <small>Added: ${new Date(repo.added_at).toLocaleDateString()}</small>
+                            <button class="secondary" onclick="removeRepository('${repo.name}')" style="float: right;">Remove</button>
+                        </div>
+                    `).join('');
+                    
+                    // Update filter dropdown
+                    filterSelect.innerHTML = '<option value="">All Repositories</option>' +
+                        data.repositories.map(repo => 
+                            `<option value="${repo.name}">${repo.name}</option>`
+                        ).join('');
+                } else {
+                    container.innerHTML = '<p>No repositories added yet. Add some common repositories:</p>' +
+                        '<button onclick="addCommonRepositories()">Add Common Repositories</button>';
+                }
+            } catch (error) {
+                document.getElementById('repositoriesList').innerHTML = 
+                    `<div class="error">Error loading repositories: ${error.message}</div>`;
+            }
+        }
+
+        async function addRepository() {
+            const name = document.getElementById('repoName').value.trim();
+            const url = document.getElementById('repoUrl').value.trim();
+            
+            if (!name || !url) {
+                document.getElementById('repoStatus').innerHTML = 
+                    '<div class="error">Please provide both name and URL</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/repositories', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, url })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('repoStatus').innerHTML = 
+                        '<div class="success">Repository added successfully!</div>';
+                    document.getElementById('repoName').value = '';
+                    document.getElementById('repoUrl').value = '';
+                    loadRepositories();
+                } else {
+                    throw new Error(data.error || 'Failed to add repository');
+                }
+            } catch (error) {
+                document.getElementById('repoStatus').innerHTML = 
+                    `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function removeRepository(name) {
+            if (!confirm(`Remove repository '${name}'?`)) return;
+
+            try {
+                const response = await fetch(`/api/repositories/${name}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadRepositories();
+                } else {
+                    const data = await response.json();
+                    alert(`Error: ${data.error || 'Failed to remove repository'}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        async function addCommonRepositories() {
+            const commonRepos = [
+                { name: 'bitnami', url: 'https://charts.bitnami.com/bitnami' },
+                { name: 'stable', url: 'https://charts.helm.sh/stable' },
+                { name: 'ingress-nginx', url: 'https://kubernetes.github.io/ingress-nginx' }
+            ];
+
+            for (const repo of commonRepos) {
+                try {
+                    await fetch('/api/repositories', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(repo)
+                    });
+                } catch (error) {
+                    console.error(`Failed to add ${repo.name}:`, error);
+                }
+            }
+
+            loadRepositories();
+        }
+
+        // Chart search and selection
+        async function searchCharts() {
+            const query = document.getElementById('chartSearch').value.trim();
+            const repository = document.getElementById('repoFilter').value;
+
+            try {
+                const params = new URLSearchParams();
+                if (query) params.append('query', query);
+                if (repository) params.append('repository', repository);
+
+                const response = await fetch(`/api/charts/search?${params}`);
+                const data = await response.json();
+
+                const container = document.getElementById('chartsList');
+                
+                if (data.charts && data.charts.length > 0) {
+                    container.innerHTML = data.charts.map(chart => `
+                        <div class="chart-item" onclick="selectChart('${chart.repository}', '${chart.name}', '${chart.version}')">
+                            <strong>${chart.name}</strong> <span style="color: #666;">v${chart.version}</span><br>
+                            <div class="chart-details">
+                                Repository: ${chart.repository}<br>
+                                ${chart.description ? chart.description : 'No description available'}
+                                ${chart.app_version ? `<br>App Version: ${chart.app_version}` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p>No charts found. Try a different search term or add more repositories.</p>';
+                }
+            } catch (error) {
+                document.getElementById('chartsList').innerHTML = 
+                    `<div class="error">Error searching charts: ${error.message}</div>`;
+            }
+        }
+
+        function selectChart(repository, chart, version) {
+            // Remove previous selection
+            document.querySelectorAll('.chart-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // Add selection to clicked item
+            event.target.classList.add('selected');
+            
+            selectedChart = { repository, chart, version };
+            
+            // Show process button
+            const container = document.getElementById('chartsList');
+            let processBtn = document.getElementById('processChartBtn');
+            if (!processBtn) {
+                processBtn = document.createElement('button');
+                processBtn.id = 'processChartBtn';
+                processBtn.textContent = 'Process Selected Chart';
+                processBtn.onclick = processSelectedChart;
+                container.appendChild(processBtn);
+            }
+        }
+
+        async function processSelectedChart() {
+            if (!selectedChart) return;
+
+            const statusEl = document.getElementById('chartsList');
+            statusEl.innerHTML += '<div class="loading">Processing chart...</div>';
+
+            try {
+                const response = await fetch('/api/charts/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(selectedChart)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to process chart');
+                }
+
+                chartData = await response.json();
+                displayChart();
+                
+                // Show builder tab
+                document.getElementById('builderTab').style.display = 'block';
+                showTab('builder');
+                
+                // Update tab button to active
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                document.getElementById('builderTab').classList.add('active');
+                
+            } catch (error) {
+                statusEl.innerHTML += `<div class="error">Error: ${error.message}</div>`;
+                console.error('Error processing chart:', error);
+            }
+        }
+
+        // Legacy direct URL processing
+        async function loadChartFromUrl() {
+            const url = document.getElementById('chartUrl').value.trim();
+            if (!url) return;
+
+            const statusEl = document.getElementById('urlStatus');
+            statusEl.innerHTML = '<div class="loading">Processing chart...</div>';
+
+            try {
+                const response = await fetch('/api/chart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to process chart');
+                }
+
+                chartData = await response.json();
+                displayChart();
+                
+                // Show builder tab
+                document.getElementById('builderTab').style.display = 'block';
+                showTab('builder');
+                
+                statusEl.innerHTML = '<div class="success">Chart loaded successfully!</div>';
+            } catch (error) {
+                statusEl.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                console.error('Error loading chart:', error);
+            }
+        }
+
+        // Form builder functions (unchanged from previous version)
+        function displayChart() {
+            displayValues(chartData.values);
+            displayQuestions(chartData.questions.questions);
+        }
+
+        function displayValues(values, prefix = '') {
+            const container = document.getElementById('valuesContent');
+            container.innerHTML = '';
+            
+            function renderValues(obj, path = '') {
+                for (const [key, value] of Object.entries(obj)) {
+                    const fullPath = path ? `${path}.${key}` : key;
+                    
+                    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                        const div = document.createElement('div');
+                        div.innerHTML = `<strong>${key}</strong> (object)`;
+                        div.style.marginLeft = (path.split('.').length - 1) * 20 + 'px';
+                        container.appendChild(div);
+                        renderValues(value, fullPath);
+                    } else {
+                        const div = document.createElement('div');
+                        div.className = 'value-item';
+                        div.draggable = true;
+                        div.dataset.path = fullPath;
+                        div.dataset.value = JSON.stringify(value);
+                        div.style.marginLeft = (path.split('.').length - 1) * 20 + 'px';
+                        div.innerHTML = `
+                            <strong>${fullPath}</strong><br>
+                            <small>${typeof value} | ${Array.isArray(value) ? `[${value.length} items]` : String(value).substring(0, 50)}</small>
+                        `;
+                        div.ondragstart = (e) => {
+                            e.dataTransfer.setData('text/plain', JSON.stringify({
+                                path: fullPath,
+                                value: value
+                            }));
+                        };
+                        container.appendChild(div);
+                    }
+                }
+            }
+            
+            renderValues(values);
+        }
+
+        function displayQuestions(questions) {
+            const container = document.getElementById('questionsContent');
+            container.innerHTML = '';
+            
+            questions.forEach((question, index) => {
+                const div = document.createElement('div');
+                div.className = 'question-item';
+                div.innerHTML = `
+                    <strong>${question.label}</strong><br>
+                    <small>Variable: ${question.variable} | Type: ${question.type || 'string'} | Group: ${question.group || 'General'}</small><br>
+                    ${question.description ? `<em>${question.description}</em>` : ''}
+                    <button onclick="removeQuestion(${index})" style="float: right;">Remove</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+            document.getElementById('formBuilder').classList.add('dragover');
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            document.getElementById('formBuilder').classList.remove('dragover');
+            
+            const data = JSON.parse(ev.dataTransfer.getData('text/plain'));
+            addQuestion(data.path, data.value);
+        }
+
+        function addQuestion(path, value) {
+            const newQuestion = {
+                variable: path,
+                label: path.split('.').pop().replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+                type: typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'int' : 'string',
+                group: 'General'
+            };
+            
+            chartData.questions.questions.push(newQuestion);
+            displayQuestions(chartData.questions.questions);
+            updateBackend();
+        }
+
+        function removeQuestion(index) {
+            chartData.questions.questions.splice(index, 1);
+            displayQuestions(chartData.questions.questions);
+            updateBackend();
+        }
+
+        async function updateBackend() {
+            try {
+                await fetch(`/api/chart/${chartData.session_id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(chartData.questions)
+                });
+            } catch (error) {
+                console.error('Error updating questions:', error);
+            }
+        }
+
+        async function downloadYaml() {
+            if (!chartData) return;
+            
+            try {
+                const response = await fetch(`/api/chart/${chartData.session_id}/q`);
+                const yaml = await response.text();
+                
+                const blob = new Blob([yaml], { type: 'application/x-yaml' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'questions.yaml';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Error downloading YAML:', error);
+            }
+        }
+
+        // Remove dragover class when dragging leaves the drop zone
+        document.addEventListener('dragleave', (e) => {
+            if (e.target.id === 'formBuilder') {
+                document.getElementById('formBuilder').classList.remove('dragover');
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRepositories();
+            searchCharts(); // Load some example charts
+        });
+    </script>
+</body>
+</html>

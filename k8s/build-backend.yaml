@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: build-backend
+  namespace: rancher-questions-gen
+spec:
+  containers:
+  - name: docker
+    image: docker:24-dind
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do sleep 30; done"]
+    securityContext:
+      privileged: true
+    volumeMounts:
+    - name: source
+      mountPath: /build
+  volumes:
+  - name: source
+    hostPath:
+      path: /Users/erquill/Documents/GitHub/rancher-questions-generator/backend
+  restartPolicy: Never

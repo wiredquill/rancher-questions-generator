@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rancher Questions Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 20px; background: white; }
+        .tab { padding: 15px 25px; cursor: pointer; border: none; background: none; font-size: 16px; transition: all 0.3s; }
+        .tab.active { border-bottom: 3px solid #007bff; color: #007bff; background: #f8f9fa; }
+        .tab:hover { background: #f8f9fa; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .section { margin-bottom: 20px; padding: 25px; border: 1px solid #ddd; border-radius: 8px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .main-content { display: flex; gap: 20px; height: 70vh; }
+        .panel { flex: 1; border: 1px solid #ddd; padding: 20px; border-radius: 8px; background: white; overflow-y: auto; }
+        .values-panel { background: #f9f9f9; }
+        .form-builder { background: #fff; border: 2px dashed #ccc; position: relative; }
+        .form-builder.dragover { border-color: #007bff; background: #e7f3ff; }
+        
+        /* Values Explorer Enhanced */
+        .values-tree { font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.6; }
+        .value-item { 
+            padding: 6px 10px; margin: 2px 0; background: white; border: 1px solid #e0e0e0; 
+            cursor: grab; border-radius: 4px; transition: all 0.2s;
+            position: relative; display: flex; justify-content: space-between; align-items: center;
+        }
+        .value-item:hover { background: #f0f8ff; border-color: #007bff; }
+        .value-item.dragging { opacity: 0.5; }
+        .value-comment { color: #666; font-style: italic; font-size: 11px; margin-left: 10px; }
+        .value-default { color: #28a745; font-weight: bold; }
+        .value-type { color: #6c757d; font-size: 11px; }
+        .value-path { font-weight: bold; color: #333; }
+        
+        /* Question Items Enhanced */
+        .question-item { 
+            margin: 15px 0; padding: 15px; border: 1px solid #007bff; 
+            background: #f8f9fa; border-radius: 6px; position: relative;
+        }
+        .question-header { display: flex; justify-content: between; align-items: center; margin-bottom: 10px; }
+        .question-controls { display: flex; gap: 5px; }
+        .question-details { font-size: 12px; color: #666; margin-bottom: 10px; }
+        .question-edit-form { display: none; margin-top: 10px; padding: 15px; background: white; border-radius: 4px; }
+        .question-edit-form.active { display: block; }
+        
+        /* Repository Browser */
+        .repo-browser { display: flex; gap: 20px; height: 60vh; }
+        .repo-list { flex: 1; }
+        .chart-list { flex: 2; }
+        .repo-item, .chart-item { 
+            margin: 10px 0; padding: 15px; border: 1px solid #ddd; 
+            background: #fff; border-radius: 6px; cursor: pointer; transition: all 0.2s;
+        }
+        .repo-item:hover, .chart-item:hover { background: #f8f9fa; border-color: #007bff; }
+        .repo-item.selected, .chart-item.selected { border-color: #007bff; background: #e7f3ff; }
+        .chart-versions { margin-top: 10px; }
+        .version-selector { padding: 5px; border: 1px solid #ddd; border-radius: 4px; }
+        
+        /* Form Controls */
+        button { padding: 8px 16px; margin: 5px; cursor: pointer; border: 1px solid #007bff; 
+                background: #007bff; color: white; border-radius: 4px; transition: all 0.2s; }
+        button:hover { background: #0056b3; }
+        button.secondary { background: #6c757d; border-color: #6c757d; }
+        button.secondary:hover { background: #545b62; }
+        button.success { background: #28a745; border-color: #28a745; }
+        button.danger { background: #dc3545; border-color: #dc3545; }
+        button.small { padding: 4px 8px; font-size: 12px; }
+        
+        input, select, textarea { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; }
+        input[type="text"], select { width: 250px; }
+        textarea { width: 100%; height: 60px; resize: vertical; }
+        
+        .form-row { display: flex; gap: 10px; align-items: center; margin: 10px 0; flex-wrap: wrap; }
+        .form-group { margin: 15px 0; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        
+        /* Quick Add Buttons */
+        .quick-add-section { margin: 20px 0; padding: 15px; background: #e9ecef; border-radius: 6px; }
+        .quick-add-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        
+        /* Messages */
+        .loading { color: #666; font-style: italic; padding: 20px; text-align: center; }
+        .error { color: red; background: #ffe6e6; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .success { color: green; background: #e6ffe6; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .warning { color: #856404; background: #fff3cd; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .info { color: #004085; background: #cce7ff; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        
+        /* Live Preview Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; 
+                background-color: rgba(0,0,0,0.5); }
+        .modal.active { display: block; }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border-radius: 8px; 
+                        width: 80%; max-width: 1000px; max-height: 80vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: black; }
+        
+        /* Preview Form Styling */
+        .preview-form { background: white; padding: 20px; border-radius: 8px; }
+        .preview-question { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 6px; }
+        .preview-question.conditional-hidden { display: none; }
+        .preview-label { font-weight: bold; margin-bottom: 5px; }
+        .preview-description { color: #666; font-size: 14px; margin-bottom: 10px; }
+        .preview-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        
+        /* Drag and Drop */
+        .drag-handle { cursor: grab; padding: 5px; color: #999; }
+        .drag-handle:active { cursor: grabbing; }
+        .sortable-ghost { opacity: 0.4; }
+        
+        /* Search Enhancement */
+        .search-help { font-size: 12px; color: #666; margin-top: 5px; }
+        
+        /* Values Display */
+        .values-raw { background: #f8f9fa; padding: 15px; border-radius: 6px; font-family: 'Courier New', monospace; 
+                     font-size: 12px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Rancher Questions Generator</h1>
+        <p>Professional Helm chart questions.yaml authoring tool with repository management</p>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('repositories')">📦 Repositories</button>
+            <button class="tab" onclick="showTab('browse')">🔍 Browse Charts</button>
+            <button class="tab" onclick="showTab('direct-url')">🔗 Direct URL</button>
+            <button class="tab" onclick="showTab('builder')" id="builderTab" style="display: none;">⚙️ Form Builder</button>
+            <button class="tab" onclick="showTab('projects')" id="projectsTab">💾 Projects</button>
+        </div>
+
+        <!-- Repository Management Tab -->
+        <div id="repositories" class="tab-content active">
+            <div class="section">
+                <h3>📋 Repository Management</h3>
+                <div class="form-row">
+                    <input type="text" id="repoName" placeholder="Repository Name (e.g., bitnami)">
+                    <input type="text" id="repoUrl" placeholder="Repository URL">
+                    <button onclick="addRepository()">➕ Add Repository</button>
+                    <button class="secondary" onclick="addCommonRepositories()">⚡ Add Common Repos</button>
+                </div>
+                <div id="repoStatus"></div>
+            </div>
+
+            <div class="section">
+                <h3>📚 Available Repositories</h3>
+                <div id="repositoriesList">
+                    <div class="loading">Loading repositories...</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>🔍 Search Charts</h3>
+                <div class="form-row">
+                    <input type="text" id="chartSearch" placeholder="Search charts (supports wildcards like nginx*, *sql, etc.)">
+                    <select id="repoFilter">
+                        <option value="">All Repositories</option>
+                    </select>
+                    <button onclick="searchCharts()">🔍 Search</button>
+                </div>
+                <div class="search-help">💡 Use wildcards: nginx*, *sql, *monitoring*</div>
+                <div id="chartsList"></div>
+            </div>
+        </div>
+
+        <!-- Browse Charts Tab -->
+        <div id="browse" class="tab-content">
+            <div class="section">
+                <h3>🔍 Browse Repository Charts</h3>
+                <div class="repo-browser">
+                    <div class="repo-list">
+                        <h4>Select Repository</h4>
+                        <div id="browseRepoList"></div>
+                    </div>
+                    <div class="chart-list">
+                        <h4>Available Charts</h4>
+                        <div id="browseChartList">
+                            <div class="info">Select a repository to view available charts</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Direct URL Tab -->
+        <div id="direct-url" class="tab-content">
+            <div class="section">
+                <h3>🔗 Direct Chart URL</h3>
+                <p>Enter a direct URL to a Helm chart (.tgz) - Note: OCI URLs require Helm installation</p>
+                <div class="form-row">
+                    <input type="text" id="chartUrl" placeholder="https://example.com/chart.tgz or oci://registry.io/chart:version">
+                    <button onclick="loadChartFromUrl()">📥 Load Chart</button>
+                </div>
+                <div id="urlStatus"></div>
+            </div>
+        </div>
+
+        <!-- Form Builder Tab -->
+        <div id="builder" class="tab-content">
+            <div class="main-content">
+                <div class="panel values-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>📋 Values Explorer</h3>
+                        <button class="small secondary" onclick="toggleValuesView()">🔄 Toggle View</button>
+                    </div>
+                    <div id="valuesViewToggle">
+                        <label><input type="radio" name="valuesView" value="tree" checked> Tree View</label>
+                        <label><input type="radio" name="valuesView" value="raw"> Raw YAML</label>
+                    </div>
+                    <div id="valuesContent"></div>
+                </div>
+                
+                <div class="panel form-builder" id="formBuilder" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>🛠️ Form Builder</h3>
+                        <div>
+                            <button onclick="previewQuestions()">👀 Preview</button>
+                            <button onclick="downloadYaml()">📥 Download YAML</button>
+                            <button class="success" onclick="saveProject()">💾 Save Project</button>
+                        </div>
+                    </div>
+                    
+                    <div class="quick-add-section">
+                        <h4>⚡ Quick Add</h4>
+                        <div class="quick-add-buttons">
+                            <button class="small" onclick="quickAddService()">🌐 Service</button>
+                            <button class="small" onclick="quickAddStorage()">💾 Storage</button>
+                            <button class="small" onclick="quickAddIngress()">🔗 Ingress</button>
+                            <button class="small" onclick="quickAddResources()">⚡ Resources</button>
+                        </div>
+                    </div>
+                    
+                    <div id="dropZone" style="min-height: 100px; border: 2px dashed #ccc; padding: 20px; text-align: center; margin: 20px 0;">
+                        <p>🎯 Drop values here to create questions or add them manually with Quick Add buttons</p>
+                    </div>
+                    
+                    <div id="questionsContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects Tab -->
+        <div id="projects" class="tab-content">
+            <div class="section">
+                <h3>💾 Project Management</h3>
+                <div class="form-row">
+                    <input type="text" id="projectName" placeholder="Project Name">
+                    <textarea id="projectDescription" placeholder="Project Description"></textarea>
+                    <button onclick="saveCurrentProject()">💾 Save Current Work</button>
+                </div>
+                <div id="projectsList">
+                    <div class="info">No saved projects yet. Create some questions and save your work!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Preview Modal -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>👀 Live Preview - Questions in Action</h2>
+                <span class="close" onclick="closePreview()">&times;</span>
+            </div>
+            <div id="previewContent" class="preview-form">
+                <!-- Preview content will be generated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chartData = null;
+        let selectedChart = null;
+        let storageClasses = [];
+        let currentProject = null;
+        let questionIdCounter = 1;
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRepositories();
+            loadStorageClasses();
+            searchCharts();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Values view toggle
+            document.querySelectorAll('input[name="valuesView"]').forEach(radio => {
+                radio.addEventListener('change', toggleValuesDisplay);
+            });
+        }
+
+        // Tab management
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            // Load data when switching to browse tab
+            if (tabName === 'browse') {
+                loadBrowseRepositories();
+            }
+        }
+        
+        // Repository management continues in next part...
+        // [This is part 1 of the enhanced frontend - shall I continue with the rest?]
+    </script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rancher Questions Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .input-section { margin-bottom: 20px; padding: 20px; border: 1px solid #ddd; }
+        .main-content { display: flex; gap: 20px; }
+        .panel { flex: 1; border: 1px solid #ddd; padding: 20px; height: 500px; overflow-y: auto; }
+        .values-explorer { background: #f9f9f9; }
+        .form-builder { background: #fff; border: 2px dashed #ccc; }
+        .form-builder.dragover { border-color: #007bff; background: #e7f3ff; }
+        .value-item { 
+            padding: 8px; margin: 4px 0; background: white; border: 1px solid #ccc; 
+            cursor: grab; border-radius: 4px;
+        }
+        .value-item:hover { background: #f0f0f0; }
+        .question-item { 
+            margin: 10px 0; padding: 10px; border: 1px solid #007bff; 
+            background: #f8f9fa; border-radius: 4px;
+        }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        input[type="text"] { width: 300px; padding: 8px; }
+        .loading { color: #666; font-style: italic; }
+        .error { color: red; background: #ffe6e6; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Rancher Questions Generator</h1>
+        <p>Generate questions.yaml files for Helm charts with drag-and-drop interface</p>
+        
+        <div class="input-section">
+            <h3>Chart URL</h3>
+            <input type="text" id="chartUrl" placeholder="https://example.com/chart.tgz or oci://registry.io/chart:version">
+            <button onclick="loadChart()">Load Chart</button>
+            <div id="status"></div>
+        </div>
+
+        <div class="main-content" id="mainContent" style="display: none;">
+            <div class="panel values-explorer">
+                <h3>Values Explorer</h3>
+                <p>Drag values to the Form Builder to create questions</p>
+                <div id="valuesContent"></div>
+            </div>
+            
+            <div class="panel form-builder" id="formBuilder" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>Form Builder</h3>
+                    <button onclick="downloadYaml()">Download YAML</button>
+                </div>
+                <p>Drop values here to create questions</p>
+                <div id="questionsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chartData = null;
+
+        async function loadChart() {
+            const url = document.getElementById('chartUrl').value.trim();
+            if (!url) return;
+
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = '<div class="loading">Processing chart...</div>';
+
+            try {
+                const response = await fetch('/api/chart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to process chart');
+                }
+
+                chartData = await response.json();
+                displayChart();
+                statusEl.innerHTML = '<div style="color: green;">Chart loaded successfully!</div>';
+            } catch (error) {
+                statusEl.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                console.error('Error loading chart:', error);
+            }
+        }
+
+        function displayChart() {
+            document.getElementById('mainContent').style.display = 'flex';
+            displayValues(chartData.values);
+            displayQuestions(chartData.questions.questions);
+        }
+
+        function displayValues(values, prefix = '') {
+            const container = document.getElementById('valuesContent');
+            container.innerHTML = '';
+            
+            function renderValues(obj, path = '') {
+                for (const [key, value] of Object.entries(obj)) {
+                    const fullPath = path ? `${path}.${key}` : key;
+                    
+                    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                        const div = document.createElement('div');
+                        div.innerHTML = `<strong>${key}</strong> (object)`;
+                        container.appendChild(div);
+                        renderValues(value, fullPath);
+                    } else {
+                        const div = document.createElement('div');
+                        div.className = 'value-item';
+                        div.draggable = true;
+                        div.dataset.path = fullPath;
+                        div.dataset.value = JSON.stringify(value);
+                        div.innerHTML = `
+                            <strong>${fullPath}</strong><br>
+                            <small>${typeof value} | ${Array.isArray(value) ? `[${value.length} items]` : String(value).substring(0, 50)}</small>
+                        `;
+                        div.ondragstart = (e) => {
+                            e.dataTransfer.setData('text/plain', JSON.stringify({
+                                path: fullPath,
+                                value: value
+                            }));
+                        };
+                        container.appendChild(div);
+                    }
+                }
+            }
+            
+            renderValues(values);
+        }
+
+        function displayQuestions(questions) {
+            const container = document.getElementById('questionsContent');
+            container.innerHTML = '';
+            
+            questions.forEach((question, index) => {
+                const div = document.createElement('div');
+                div.className = 'question-item';
+                div.innerHTML = `
+                    <strong>${question.label}</strong><br>
+                    <small>Variable: ${question.variable} | Type: ${question.type || 'string'} | Group: ${question.group || 'General'}</small><br>
+                    ${question.description ? `<em>${question.description}</em>` : ''}
+                    <button onclick="removeQuestion(${index})" style="float: right;">Remove</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+            document.getElementById('formBuilder').classList.add('dragover');
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            document.getElementById('formBuilder').classList.remove('dragover');
+            
+            const data = JSON.parse(ev.dataTransfer.getData('text/plain'));
+            addQuestion(data.path, data.value);
+        }
+
+        function addQuestion(path, value) {
+            const newQuestion = {
+                variable: path,
+                label: path.split('.').pop().replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+                type: typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'int' : 'string',
+                group: 'General'
+            };
+            
+            chartData.questions.questions.push(newQuestion);
+            displayQuestions(chartData.questions.questions);
+            updateBackend();
+        }
+
+        function removeQuestion(index) {
+            chartData.questions.questions.splice(index, 1);
+            displayQuestions(chartData.questions.questions);
+            updateBackend();
+        }
+
+        async function updateBackend() {
+            try {
+                await fetch(`/api/chart/${chartData.session_id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(chartData.questions)
+                });
+            } catch (error) {
+                console.error('Error updating questions:', error);
+            }
+        }
+
+        async function downloadYaml() {
+            if (!chartData) return;
+            
+            try {
+                const response = await fetch(`/api/chart/${chartData.session_id}/q`);
+                const yaml = await response.text();
+                
+                const blob = new Blob([yaml], { type: 'application/x-yaml' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'questions.yaml';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Error downloading YAML:', error);
+            }
+        }
+
+        // Remove dragover class when dragging leaves the drop zone
+        document.addEventListener('dragleave', (e) => {
+            if (e.target.id === 'formBuilder') {
+                document.getElementById('formBuilder').classList.remove('dragover');
+            }
+        });
+    </script>
+</body>
+</html>
