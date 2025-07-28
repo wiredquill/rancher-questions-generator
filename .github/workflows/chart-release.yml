@@ -187,13 +187,13 @@ jobs:
           
           ### Installation
           ```bash
-          helm repo add rancher-questions-generator https://github.com/your-username/rancher-questions-generator/releases/download/v${{ needs.bump-version.outputs.new-version }}
+          helm repo add rancher-questions-generator https://github.com/wiredquill/rancher-questions-generator/releases/download/v${{ needs.bump-version.outputs.new-version }}
           helm install my-questions-generator rancher-questions-generator/rancher-questions-generator
           ```
           
           ### Rancher Catalog Installation
           Add this repository to your Rancher Apps & Marketplace:
-          - Repository URL: `https://github.com/your-username/rancher-questions-generator`
+          - Repository URL: `https://github.com/wiredquill/rancher-questions-generator`
           - Branch: `main` 
           
           🤖 Generated with [Claude Code](https://claude.ai/code)

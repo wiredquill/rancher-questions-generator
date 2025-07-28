@@ -39,7 +39,7 @@ spec:
           - "-c"
           - |
             if [ ! -f "/usr/share/nginx/html/index.html" ]; then
-              git clone https://github.com/your-username/rancher-questions-generator.git /tmp/repo
+              git clone https://github.com/wiredquill/rancher-questions-generator.git /tmp/repo
               cp /tmp/repo/frontend-simple/index-enhanced.html /usr/share/nginx/html/index.html
               cp /tmp/repo/frontend-simple/nginx.conf /etc/nginx/nginx.conf
             fi

@@ -1,22 +1,53 @@
-This plan outlines the architecture, features, and technology stack for an application that provides a user-friendly, drag-and-drop interface for generating questions.yaml files for Helm charts.
+# Rancher Questions Generator
 
-1. High-Level Architecture
-The application will be a containerized, single-page application (SPA) with a backend API, designed for deployment on Kubernetes.
+A professional-grade web application for creating `questions.yaml` files for Helm charts with an intuitive drag-and-drop interface. Built specifically for Rancher environments and Helm chart authoring workflows.
 
-Frontend: A responsive web interface built with a modern JavaScript framework (e.g., React or Vue). This is the client-side component that users interact with.
+## ✨ Features
 
-Backend API: A server-side application (e.g., built with Go, Python, or Node.js) that handles the core logic. It will fetch, unpack, and parse Helm charts, manage the state of the form configuration, and serve it to the frontend.
+- **🔍 Repository Management**: Browse and search Helm chart repositories
+- **📦 Chart Processing**: Extract and analyze values.yaml from Helm charts
+- **🛠️ Visual Form Builder**: Drag-and-drop interface for creating questions
+- **⚡ Quick Add Templates**: Pre-built question templates for common scenarios (Service, Storage, Ingress, Resources)
+- **👀 Live Preview**: Real-time preview of the generated form
+- **💾 Project Management**: Save and load your work
+- **🎯 Smart Defaults**: Automatically detect common patterns and suggest question types
+- **🔄 Values Explorer**: Tree and raw YAML view of chart values
+- **🌐 Repository Browsing**: Browse charts from popular repositories including Rancher Partner Charts
+- **🔐 Authentication Support**: Support for protected OCI registries like SUSE Application Collection
 
-Kubernetes Deployment:
+## 🚀 Quick Start
 
-Frontend: Served as static assets from a lightweight web server like Nginx, running in its own pod.
+### Prerequisites
 
-Backend: Deployed as a separate service and pod, handling API requests from the frontend.
+- Kubernetes cluster with kubectl access
+- Container runtime (for building images)
 
-Ingress: An Ingress controller will manage external access to the frontend and route API requests to the backend service.
+### Deployment
 
-2. Core Functionality & User Workflow
-The primary goal is to provide a "virtual install" experience where a user can dynamically build and preview a Rancher-style installation form.
+1. **Clone the repository**:
+```bash
+git clone https://github.com/wiredquill/rancher-questions-generator.git
+cd rancher-questions-generator
+```
+
+2. **Build and deploy**:
+```bash
+# Apply Kubernetes manifests
+kubectl apply -f k8s/
+```
+
+3. **Access the application**:
+The application will be available at the LoadBalancer IP (check with `kubectl get svc`).
+
+### Using Helm Chart (Recommended)
+
+```bash
+# Add the repository
+helm repo add rancher-questions-generator https://wiredquill.github.io/rancher-questions-generator
+
+# Install the chart
+helm install my-questions-generator rancher-questions-generator/rancher-questions-generator
+```
 
 Input: The user provides a URL to a Helm chart .tgz file.
 
