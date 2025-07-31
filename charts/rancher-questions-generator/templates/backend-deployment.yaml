@@ -30,7 +30,9 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "rancher-questions-generator.serviceAccountName" . }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
       initContainers:
       - name: copy-source
         image: alpine/git:latest
@@ -46,15 +48,17 @@ spec:
         - name: source-code
           mountPath: /app
         securityContext:
-          {{- toYaml .Values.securityContext | nindent 10 }}
+          runAsNonRoot: false
+          runAsUser: 0
       containers:
       - name: backend
         securityContext:
-          {{- toYaml .Values.securityContext | nindent 10 }}
+          runAsNonRoot: false
+          runAsUser: 0
         image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
         imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
         command: ["sh"]
-        args: ["-c", "cd /app && go mod tidy && go run cmd/main.go"]
+        args: ["-c", "cd /app && export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod && go mod tidy && go run cmd/main.go"]
         ports:
         - name: http
           containerPort: {{ .Values.backend.service.targetPort }}
