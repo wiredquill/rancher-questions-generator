@@ -58,19 +58,25 @@ spec:
         image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
         imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
         command: ["sh"]
-        args: ["-c", "cd /app && export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod && go mod tidy && go run cmd/main.go"]
+        args: ["-c", "cd /app && export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod && go mod tidy && go build -o main cmd/main.go && ./main"]
         ports:
         - name: http
           containerPort: {{ .Values.backend.service.targetPort }}
           protocol: TCP
-        {{- if .Values.backend.livenessProbe }}
         livenessProbe:
-          {{- toYaml .Values.backend.livenessProbe | nindent 10 }}
-        {{- end }}
-        {{- if .Values.backend.readinessProbe }}
+          httpGet:
+            path: /api/health
+            port: 8080
+          initialDelaySeconds: 180
+          periodSeconds: 30
+          timeoutSeconds: 10
         readinessProbe:
-          {{- toYaml .Values.backend.readinessProbe | nindent 10 }}
-        {{- end }}
+          httpGet:
+            path: /api/health
+            port: 8080
+          initialDelaySeconds: 120
+          periodSeconds: 10
+          timeoutSeconds: 5
         resources:
           {{- toYaml .Values.backend.resources | nindent 10 }}
         env:
