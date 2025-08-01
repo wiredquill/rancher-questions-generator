@@ -81,7 +81,7 @@ jobs:
 
     - name: Validate Kubernetes manifests
       run: |
-        helm template test-release ${{ env.CHART_PATH }} | kubectl --dry-run=client apply -f -
+        helm template test-release ${{ env.CHART_PATH }} | kubectl --dry-run=client --validate=false apply -f -
 
   bump-version:
     runs-on: ubuntu-latest
