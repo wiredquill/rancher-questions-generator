@@ -167,8 +167,56 @@ func (rm *RepositoryManager) SearchCharts(query, repository string) ([]*models.C
 	rm.mutex.RLock()
 	defer rm.mutex.RUnlock()
 	
-	// Enhanced chart catalog with more realistic data including SUSE Application Collection
+	// Try to fetch charts from actual Helm repositories first
+	if repository != "" {
+		if repo, exists := rm.repositories[repository]; exists {
+			if charts, err := rm.fetchChartsFromRepository(repo); err == nil && len(charts) > 0 {
+				return rm.filterCharts(charts, query), nil
+			}
+			fmt.Printf("Failed to fetch charts from repository %s, falling back to examples: %v\n", repository, err)
+		}
+	}
+	
+	// Enhanced chart catalog with more realistic data - fallback for when real repositories aren't accessible
 	exampleCharts := []*models.Chart{
+		// Rancher Partner Charts
+		{
+			Name:        "n8n",
+			Version:     "0.21.0",
+			Versions:    []string{"0.21.0", "0.20.5", "0.20.4"},
+			AppVersion:  "1.12.0",
+			Description: "n8n is a workflow automation tool for technical people",
+			Repository:  "rancher-partner",
+			Keywords:    []string{"automation", "workflow", "integration"},
+		},
+		{
+			Name:        "rancher-monitoring",
+			Version:     "103.0.3",
+			Versions:    []string{"103.0.3", "103.0.2", "103.0.1"},
+			AppVersion:  "v0.68.0",
+			Description: "Rancher Monitoring powered by Prometheus",
+			Repository:  "rancher-partner",
+			Keywords:    []string{"monitoring", "prometheus", "rancher"},
+		},
+		{
+			Name:        "rancher-logging",
+			Version:     "103.1.1",
+			Versions:    []string{"103.1.1", "103.1.0", "103.0.0"},
+			AppVersion:  "4.4.0",
+			Description: "Rancher Logging powered by Fluent Bit and Fluentd",
+			Repository:  "rancher-partner",
+			Keywords:    []string{"logging", "fluent", "rancher"},
+		},
+		{
+			Name:        "rancher-istio",
+			Version:     "103.2.0",
+			Versions:    []string{"103.2.0", "103.1.0", "103.0.0"},
+			AppVersion:  "1.19.3",
+			Description: "Rancher Istio Service Mesh",
+			Repository:  "rancher-partner",
+			Keywords:    []string{"service-mesh", "istio", "rancher"},
+		},
+		// Bitnami Charts
 		{
 			Name:        "nginx",
 			Version:     "15.4.4",
@@ -177,24 +225,6 @@ func (rm *RepositoryManager) SearchCharts(query, repository string) ([]*models.C
 			Description: "NGINX Open Source is a web server that can be also used as a reverse proxy, load balancer, and HTTP cache",
 			Repository:  "bitnami",
 			Keywords:    []string{"nginx", "http", "web", "www", "reverse proxy"},
-		},
-		{
-			Name:        "ollama",
-			Version:     "1.16.0",
-			Versions:    []string{"1.16.0", "1.15.0", "1.14.0"},
-			AppVersion:  "0.1.26",
-			Description: "Get up and running with Llama 2, Mistral, Gemma, and other large language models",
-			Repository:  "suse-application-collection",
-			Keywords:    []string{"ai", "llm", "machine learning", "ollama"},
-		},
-		{
-			Name:        "prometheus",
-			Version:     "27.25.0",
-			Versions:    []string{"27.25.0", "27.24.0", "27.23.0"},
-			AppVersion:  "2.45.0",
-			Description: "Prometheus is a monitoring system and time series database",
-			Repository:  "suse-application-collection",
-			Keywords:    []string{"monitoring", "metrics", "prometheus", "observability"},
 		},
 		{
 			Name:        "mysql",
@@ -215,14 +245,15 @@ func (rm *RepositoryManager) SearchCharts(query, repository string) ([]*models.C
 			Keywords:    []string{"postgresql", "postgres", "database", "sql"},
 		},
 		{
-			Name:        "n8n",
-			Version:     "0.21.0",
-			Versions:    []string{"0.21.0", "0.20.5", "0.20.4"},
-			AppVersion:  "1.12.0",
-			Description: "n8n is a workflow automation tool for technical people",
-			Repository:  "rancher-partner",
-			Keywords:    []string{"automation", "workflow", "integration"},
+			Name:        "redis",
+			Version:     "18.19.4",
+			Versions:    []string{"18.19.4", "18.19.3", "18.19.2"},
+			AppVersion:  "7.2.4",
+			Description: "Redis is an open source, in-memory data structure store",
+			Repository:  "bitnami",
+			Keywords:    []string{"redis", "cache", "database", "memory"},
 		},
+		// Stable Charts
 		{
 			Name:        "prometheus",
 			Version:     "25.27.0",
@@ -241,11 +272,31 @@ func (rm *RepositoryManager) SearchCharts(query, repository string) ([]*models.C
 			Repository:  "stable",
 			Keywords:    []string{"grafana", "monitoring", "visualization"},
 		},
+		// Ingress NGINX
+		{
+			Name:        "ingress-nginx",
+			Version:     "4.8.3",
+			Versions:    []string{"4.8.3", "4.8.2", "4.8.1"},
+			AppVersion:  "1.9.4",
+			Description: "Ingress controller for Kubernetes using NGINX as a reverse proxy and load balancer",
+			Repository:  "ingress-nginx",
+			Keywords:    []string{"ingress", "nginx", "load-balancer"},
+		},
 	}
 	
+	return rm.filterCharts(exampleCharts, query, repository), nil
+}
+
+// Helper function to filter charts based on query and repository
+func (rm *RepositoryManager) filterCharts(charts []*models.Chart, query string, repository ...string) []*models.Chart {
 	var filteredCharts []*models.Chart
-	for _, chart := range exampleCharts {
-		if repository != "" && chart.Repository != repository {
+	repo := ""
+	if len(repository) > 0 {
+		repo = repository[0]
+	}
+	
+	for _, chart := range charts {
+		if repo != "" && chart.Repository != repo {
 			continue
 		}
 		if query != "" {
@@ -281,7 +332,14 @@ func (rm *RepositoryManager) SearchCharts(query, repository string) ([]*models.C
 		filteredCharts = append(filteredCharts, chart)
 	}
 	
-	return filteredCharts, nil
+	return filteredCharts
+}
+
+// Fetch charts from actual Helm repository (attempts real repository access)
+func (rm *RepositoryManager) fetchChartsFromRepository(repo *models.Repository) ([]*models.Chart, error) {
+	// This would implement actual Helm repository index.yaml fetching
+	// For now, return error to use fallback examples
+	return nil, fmt.Errorf("real repository fetching not yet implemented")
 }
 
 func (rm *RepositoryManager) PullChart(repository, chartName, version string) (string, error) {

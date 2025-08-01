@@ -295,7 +295,11 @@
                             <button onclick="quickAddStorage()">💾 Storage</button>
                             <button onclick="quickAddIngress()">🔗 Ingress</button>
                             <button onclick="quickAddResources()">⚡ Resources</button>
-                            <button onclick="quickAddReplicas()">📊 Replicas</button>
+                            <button onclick="quickAddReplicas()">📊 Scaling</button>
+                            <button onclick="quickAddPersistence()">🗄️ Persistence</button>
+                            <button onclick="quickAddProbes()">❤️ Health Checks</button>
+                            <button onclick="quickAddSecurity()">🔒 Security</button>
+                            <button onclick="quickAddNodeAffinity()">📍 Scheduling</button>
                         </div>
                     </div>
                     
@@ -931,11 +935,11 @@
 
         // Quick add functions
         async function quickAddService() {
-            addQuestion('service.type', 'ClusterIP', {
+            addQuestion('service.type', 'LoadBalancer', {
                 label: 'Service Type',
                 description: 'Kubernetes service type for exposing the application',
                 type: 'enum',
-                options: ['ClusterIP', 'NodePort', 'LoadBalancer'],
+                options: ['LoadBalancer', 'NodePort', 'ClusterIP'],
                 group: 'Networking'
             });
         }
@@ -954,29 +958,224 @@
         }
 
         function quickAddIngress() {
+            // Add multiple ingress-related questions
             addQuestion('ingress.enabled', false, {
                 label: 'Enable Ingress',
                 description: 'Enable ingress for external access',
                 type: 'boolean',
                 group: 'Networking'
             });
+            
+            addQuestion('ingress.className', 'nginx', {
+                label: 'Ingress Class',
+                description: 'Ingress controller class name',
+                type: 'enum',
+                options: ['nginx', 'traefik', 'alb', 'gce'],
+                group: 'Networking'
+            });
+            
+            addQuestion('ingress.host', '', {
+                label: 'Ingress Host',
+                description: 'Hostname for ingress (e.g., app.example.com)',
+                type: 'string',
+                group: 'Networking'
+            });
+            
+            addQuestion('ingress.tls.enabled', false, {
+                label: 'Enable TLS',
+                description: 'Enable TLS/SSL termination',
+                type: 'boolean',
+                group: 'Networking'
+            });
+            
+            addQuestion('ingress.tls.secretName', '', {
+                label: 'TLS Secret Name',
+                description: 'Name of TLS certificate secret',
+                type: 'string',
+                group: 'Networking'
+            });
         }
 
         function quickAddResources() {
+            // Add comprehensive resource configuration
             addQuestion('resources.requests.memory', '256Mi', {
                 label: 'Memory Request',
                 description: 'Minimum memory allocation',
                 type: 'string',
                 group: 'Resources'
             });
+            
+            addQuestion('resources.requests.cpu', '100m', {
+                label: 'CPU Request',
+                description: 'Minimum CPU allocation',
+                type: 'string',
+                group: 'Resources'
+            });
+            
+            addQuestion('resources.limits.memory', '512Mi', {
+                label: 'Memory Limit',
+                description: 'Maximum memory allocation',
+                type: 'string',
+                group: 'Resources'
+            });
+            
+            addQuestion('resources.limits.cpu', '500m', {
+                label: 'CPU Limit',
+                description: 'Maximum CPU allocation',
+                type: 'string',
+                group: 'Resources'
+            });
         }
 
         function quickAddReplicas() {
-            addQuestion('replicaCount', 1, {
+            addQuestion('replicaCount', 3, {
                 label: 'Replica Count',
                 description: 'Number of pod replicas',
                 type: 'int',
                 group: 'Scaling'
+            });
+            
+            addQuestion('autoscaling.enabled', false, {
+                label: 'Enable Autoscaling',
+                description: 'Enable Horizontal Pod Autoscaler',
+                type: 'boolean',
+                group: 'Scaling'
+            });
+            
+            addQuestion('autoscaling.minReplicas', 2, {
+                label: 'Minimum Replicas',
+                description: 'Minimum number of replicas for autoscaling',
+                type: 'int',
+                group: 'Scaling'
+            });
+            
+            addQuestion('autoscaling.maxReplicas', 10, {
+                label: 'Maximum Replicas', 
+                description: 'Maximum number of replicas for autoscaling',
+                type: 'int',
+                group: 'Scaling'
+            });
+            
+            addQuestion('autoscaling.targetCPUUtilizationPercentage', 80, {
+                label: 'Target CPU Utilization (%)',
+                description: 'Target CPU utilization percentage for autoscaling',
+                type: 'int',
+                group: 'Scaling'
+            });
+        }
+
+        function quickAddPersistence() {
+            addQuestion('persistence.enabled', true, {
+                label: 'Enable Persistence',
+                description: 'Enable persistent volume for data storage',
+                type: 'boolean',
+                group: 'Storage'
+            });
+            
+            addQuestion('persistence.size', '10Gi', {
+                label: 'Storage Size',
+                description: 'Size of persistent volume',
+                type: 'string',
+                group: 'Storage'
+            });
+            
+            addQuestion('persistence.accessMode', 'ReadWriteOnce', {
+                label: 'Access Mode',
+                description: 'Persistent volume access mode', 
+                type: 'enum',
+                options: ['ReadWriteOnce', 'ReadOnlyMany', 'ReadWriteMany'],
+                group: 'Storage'
+            });
+        }
+
+        function quickAddProbes() {
+            addQuestion('livenessProbe.enabled', true, {
+                label: 'Enable Liveness Probe',
+                description: 'Enable liveness probe for pod health checking',
+                type: 'boolean',
+                group: 'Health Checks'
+            });
+            
+            addQuestion('livenessProbe.httpGet.path', '/health', {
+                label: 'Liveness Probe Path',
+                description: 'HTTP path for liveness probe',
+                type: 'string',
+                group: 'Health Checks'
+            });
+            
+            addQuestion('readinessProbe.enabled', true, {
+                label: 'Enable Readiness Probe',
+                description: 'Enable readiness probe for traffic routing',
+                type: 'boolean',
+                group: 'Health Checks'
+            });
+            
+            addQuestion('readinessProbe.httpGet.path', '/ready', {
+                label: 'Readiness Probe Path', 
+                description: 'HTTP path for readiness probe',
+                type: 'string',
+                group: 'Health Checks'
+            });
+        }
+
+        function quickAddSecurity() {
+            addQuestion('securityContext.runAsNonRoot', true, {
+                label: 'Run as Non-Root',
+                description: 'Run container as non-root user',
+                type: 'boolean',
+                group: 'Security'
+            });
+            
+            addQuestion('securityContext.runAsUser', 1000, {
+                label: 'User ID',
+                description: 'User ID to run the container',
+                type: 'int',
+                group: 'Security'
+            });
+            
+            addQuestion('securityContext.fsGroup', 2000, {
+                label: 'File System Group',
+                description: 'File system group for volume permissions',
+                type: 'int',
+                group: 'Security'
+            });
+            
+            addQuestion('podSecurityContext.seccompProfile.type', 'RuntimeDefault', {
+                label: 'Seccomp Profile',
+                description: 'Seccomp profile type',
+                type: 'enum',
+                options: ['RuntimeDefault', 'Localhost', 'Unconfined'],
+                group: 'Security'
+            });
+        }
+
+        function quickAddNodeAffinity() {
+            addQuestion('nodeSelector.enabled', false, {
+                label: 'Enable Node Selector',
+                description: 'Schedule pods on specific nodes',
+                type: 'boolean',
+                group: 'Scheduling'
+            });
+            
+            addQuestion('nodeSelector.key', 'kubernetes.io/arch', {
+                label: 'Node Selector Key',
+                description: 'Node selector label key',
+                type: 'string',
+                group: 'Scheduling'
+            });
+            
+            addQuestion('nodeSelector.value', 'amd64', {
+                label: 'Node Selector Value',
+                description: 'Node selector label value',
+                type: 'string',
+                group: 'Scheduling'
+            });
+            
+            addQuestion('tolerations.enabled', false, {
+                label: 'Enable Tolerations',
+                description: 'Allow scheduling on tainted nodes',
+                type: 'boolean',
+                group: 'Scheduling'
             });
         }
 
