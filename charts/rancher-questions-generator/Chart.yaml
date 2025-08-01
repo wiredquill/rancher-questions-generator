@@ -1,6 +1,6 @@
 apiVersion: v2
 name: rancher-questions-generator
-description: A professional-grade web application for creating questions.yaml files for Helm charts with an intuitive drag-and-drop interface
+description: A professional-grade web application for creating questions.yaml files for Helm charts with an intuitive drag-and-drop interface and comprehensive Kubernetes deployment patterns
 type: application
 version: 1.0.1
 appVersion: "1.0.1"
