@@ -172,7 +172,8 @@ func (rm *RepositoryManager) SearchCharts(query, repository string) ([]*models.C
 	// Try to fetch charts from actual Helm repositories first
 	if repository != "" {
 		if repo, exists := rm.repositories[repository]; exists {
-			if charts, err := rm.fetchChartsFromRepository(repo); err == nil && len(charts) > 0 {
+			charts, err := rm.fetchChartsFromRepository(repo)
+			if err == nil && len(charts) > 0 {
 				return rm.filterCharts(charts, query), nil
 			}
 			fmt.Printf("Failed to fetch charts from repository %s, falling back to examples: %v\n", repository, err)
