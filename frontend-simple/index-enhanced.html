@@ -290,6 +290,11 @@
                     
                     <div class="quick-add">
                         <h4>⚡ Quick Add Common Questions</h4>
+                        <div style="margin-bottom: 15px;">
+                            <button class="btn-primary" onclick="initializeManualForm()" style="background: #38a169;">
+                                📝 Start Manual Form Builder
+                            </button>
+                        </div>
                         <div class="quick-add-buttons">
                             <button onclick="quickAddService()">🌐 Service</button>
                             <button onclick="quickAddStorage()">💾 Storage</button>
@@ -886,6 +891,11 @@
         });
 
         function addQuestion(path, value, customData = {}) {
+            // Initialize chartData if it doesn't exist (for manual form building)
+            if (!chartData) {
+                initializeManualForm();
+            }
+            
             const newQuestion = {
                 variable: path,
                 label: customData.label || path.split('.').pop().replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
@@ -899,6 +909,22 @@
             chartData.questions.questions.push(newQuestion);
             displayQuestions(chartData.questions.questions);
             updateBackend();
+        }
+
+        function initializeManualForm() {
+            chartData = {
+                session_id: 'manual-' + Date.now(),
+                chart_name: 'Custom Chart',
+                questions: {
+                    questions: []
+                }
+            };
+            
+            // Show the form builder section
+            document.getElementById('formBuilder').style.display = 'block';
+            document.getElementById('formBuilderContent').style.display = 'block';
+            
+            showMessage('formBuilderContent', 'success', '📝 Manual form builder initialized! Add questions using the Quick Add buttons or drag values from the repository browser.');
         }
 
         // Question management
