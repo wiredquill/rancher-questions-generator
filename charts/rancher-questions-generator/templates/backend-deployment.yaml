@@ -58,7 +58,7 @@ spec:
         image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
         imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
         command: ["sh"]
-        args: ["-c", "cd /app && export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod && go mod tidy && go build -o main cmd/main.go && ./main"]
+        args: ["-c", "cd /app && export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod && apk add --no-cache curl ca-certificates && curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh && go mod tidy && go build -o main cmd/main.go && ./main"]
         ports:
         - name: http
           containerPort: {{ .Values.backend.service.targetPort }}
