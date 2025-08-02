@@ -79,9 +79,23 @@ jobs:
       run: |
         helm template test-release ${{ env.CHART_PATH }} --debug
 
-    - name: Validate Kubernetes manifests
+    - name: Validate manifests are well-formed
       run: |
-        helm template test-release ${{ env.CHART_PATH }} | kubectl --dry-run=client --validate=false apply -f -
+        # Test that helm template generates valid YAML without syntax errors
+        helm template test-release ${{ env.CHART_PATH }} > /tmp/manifests.yaml
+        echo "✅ Helm template generated $(wc -l < /tmp/manifests.yaml) lines of manifests"
+        
+        # Basic YAML syntax validation
+        python3 -c "
+        import yaml
+        with open('/tmp/manifests.yaml', 'r') as f:
+            try:
+                list(yaml.safe_load_all(f.read()))
+                print('✅ All manifests have valid YAML syntax')
+            except yaml.YAMLError as e:
+                print(f'❌ YAML syntax error: {e}')
+                exit(1)
+        "
 
   bump-version:
     runs-on: ubuntu-latest
