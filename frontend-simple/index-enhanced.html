@@ -103,6 +103,27 @@
                                    color: white; padding: 10px 16px; border-radius: 6px; font-size: 14px; }
         .quick-add-buttons button:hover { background: rgba(255,255,255,0.3); }
         
+        /* Advanced Question Editor */
+        .advanced-editor { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 15px; }
+        .advanced-editor h4 { margin: 0 0 15px 0; color: #2d3748; }
+        .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0; }
+        .field-group { margin: 15px 0; }
+        .field-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #4a5568; }
+        .options-editor { margin-top: 10px; }
+        .option-item { display: flex; gap: 10px; align-items: center; margin: 8px 0; }
+        .option-item input { flex: 1; }
+        .remove-option { background: #e53e3e; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; }
+        .add-option { background: #38a169; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        
+        /* Section Templates */
+        .template-library { background: #edf2f7; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .template-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 15px; }
+        .template-item { background: white; padding: 15px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 1px solid #e2e8f0; }
+        .template-item:hover { border-color: #667eea; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15); }
+        .template-title { font-weight: 600; color: #2d3748; margin-bottom: 8px; }
+        .template-desc { font-size: 12px; color: #718096; }
+        .template-questions { font-size: 11px; color: #a0aec0; margin-top: 5px; }
+        
         /* Form Controls */
         button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; 
                 font-weight: 500; transition: all 0.2s; }
@@ -288,14 +309,51 @@
                         </div>
                     </div>
                     
-                    <div class="quick-add">
-                        <h4>⚡ Quick Add Common Questions</h4>
+                    <div class="template-library">
+                        <h4>📋 Question Templates & Sections</h4>
                         <div style="margin-bottom: 15px;">
                             <button class="btn-primary" onclick="initializeManualForm()" style="background: #38a169;">
                                 📝 Start Manual Form Builder
                             </button>
+                            <button class="btn-secondary" onclick="toggleAdvancedEditor()" style="margin-left: 10px;">
+                                🔧 Advanced Question Editor
+                            </button>
                         </div>
-                        <div class="quick-add-buttons">
+                        
+                        <div class="template-grid">
+                            <div class="template-item" onclick="addAICompareSection()">
+                                <div class="template-title">🤖 AI Compare Configuration</div>
+                                <div class="template-desc">Advanced AI setup with GPU, observability, and pipeline integration</div>
+                                <div class="template-questions">9 questions with conditional logic</div>
+                            </div>
+                            <div class="template-item" onclick="addMainConfigSection()">
+                                <div class="template-title">⚙️ Main Configuration</div>
+                                <div class="template-desc">Primary application settings with advanced toggle</div>
+                                <div class="template-questions">4 questions with show_if conditions</div>
+                            </div>
+                            <div class="template-item" onclick="addNetworkingSection()">
+                                <div class="template-title">🌐 Networking</div>
+                                <div class="template-desc">Service types, ingress, and load balancer configuration</div>
+                                <div class="template-questions">5 questions</div>
+                            </div>
+                            <div class="template-item" onclick="addObservabilitySection()">
+                                <div class="template-title">📊 Observability</div>
+                                <div class="template-desc">OpenTelemetry, monitoring, and GPU stats collection</div>
+                                <div class="template-questions">4 questions with dependencies</div>
+                            </div>
+                            <div class="template-item" onclick="addSecuritySection()">
+                                <div class="template-title">🔒 Security</div>
+                                <div class="template-desc">NeuVector integration and DLP configuration</div>
+                                <div class="template-questions">5 questions with nested conditions</div>
+                            </div>
+                            <div class="template-item" onclick="addImageSection()">
+                                <div class="template-title">🏗️ Images</div>
+                                <div class="template-desc">Container image tags for all components</div>
+                                <div class="template-questions">4 questions with advanced toggle</div>
+                            </div>
+                        </div>
+                        
+                        <div class="quick-add-buttons" style="margin-top: 15px;">
                             <button onclick="quickAddService()">🌐 Service</button>
                             <button onclick="quickAddStorage()">💾 Storage</button>
                             <button onclick="quickAddIngress()">🔗 Ingress</button>
@@ -305,6 +363,64 @@
                             <button onclick="quickAddProbes()">❤️ Health Checks</button>
                             <button onclick="quickAddSecurity()">🔒 Security</button>
                             <button onclick="quickAddNodeAffinity()">📍 Scheduling</button>
+                        </div>
+                    </div>
+                    
+                    <div id="advancedEditor" class="advanced-editor" style="display: none;">
+                        <h4>🔧 Advanced Question Editor</h4>
+                        <div class="field-row">
+                            <div class="field-group">
+                                <label>Variable Path</label>
+                                <input type="text" id="advVariable" placeholder="e.g., ollama.gpu.enabled">
+                            </div>
+                            <div class="field-group">
+                                <label>Label</label>
+                                <input type="text" id="advLabel" placeholder="e.g., Enable GPU">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <label>Description</label>
+                            <textarea id="advDescription" placeholder="Detailed description of the configuration option"></textarea>
+                        </div>
+                        <div class="field-row">
+                            <div class="field-group">
+                                <label>Type</label>
+                                <select id="advType" onchange="handleTypeChange()">
+                                    <option value="string">String</option>
+                                    <option value="int">Integer</option>
+                                    <option value="boolean">Boolean</option>
+                                    <option value="enum">Dropdown (Enum)</option>
+                                    <option value="password">Password</option>
+                                </select>
+                            </div>
+                            <div class="field-group">
+                                <label>Group</label>
+                                <input type="text" id="advGroup" placeholder="e.g., Main Configuration">
+                            </div>
+                        </div>
+                        <div class="field-row">
+                            <div class="field-group">
+                                <label>Default Value</label>
+                                <input type="text" id="advDefault" placeholder="Default value">
+                            </div>
+                            <div class="field-group">
+                                <label>Show If Condition</label>
+                                <input type="text" id="advShowIf" placeholder="e.g., advancedConfig=true">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <label>
+                                <input type="checkbox" id="advRequired"> Required Field
+                            </label>
+                        </div>
+                        <div id="enumOptions" class="options-editor" style="display: none;">
+                            <label>Dropdown Options</label>
+                            <div id="optionsList"></div>
+                            <button type="button" class="add-option" onclick="addEnumOption()">+ Add Option</button>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <button class="btn-primary" onclick="addAdvancedQuestion()">➕ Add Question</button>
+                            <button class="btn-secondary" onclick="clearAdvancedEditor()">🗑️ Clear</button>
                         </div>
                     </div>
                     
@@ -827,7 +943,9 @@
                             <span class="meta-tag">Type: ${question.type || 'string'}</span>
                             <span class="meta-tag">Group: ${question.group || 'General'}</span>
                             ${question.required ? '<span class="meta-tag" style="background: #fed7d7; color: #c53030;">Required</span>' : ''}
-                            ${question.default ? `<span class="meta-tag">Default: ${question.default}</span>` : ''}
+                            ${question.default !== undefined ? `<span class="meta-tag">Default: ${question.default}</span>` : ''}
+                            ${question.show_if ? `<span class="meta-tag" style="background: #bee3f8; color: #2b6cb0;">Show If: ${question.show_if}</span>` : ''}
+                            ${question.options ? `<span class="meta-tag" style="background: #c6f6d5; color: #2f855a;">${question.options.length} options</span>` : ''}
                         </div>
                     </div>
                     
@@ -848,6 +966,7 @@
                                     <option value="int" ${question.type === 'int' ? 'selected' : ''}>Integer</option>
                                     <option value="boolean" ${question.type === 'boolean' ? 'selected' : ''}>Boolean</option>
                                     <option value="enum" ${question.type === 'enum' ? 'selected' : ''}>Dropdown</option>
+                                    <option value="password" ${question.type === 'password' ? 'selected' : ''}>Password</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -856,10 +975,26 @@
                             </div>
                         </div>
                         <div class="form-row">
+                            <div class="form-group">
+                                <label>Show If Condition</label>
+                                <input type="text" id="showif-${index}" value="${question.show_if || ''}" placeholder="e.g., advancedConfig=true">
+                            </div>
+                            <div class="form-group">
+                                <label>Default Value</label>
+                                <input type="text" id="default-${index}" value="${question.default || ''}">
+                            </div>
+                        </div>
+                        <div class="form-row">
                             <label>
                                 <input type="checkbox" id="required-${index}" ${question.required ? 'checked' : ''}> Required
                             </label>
                         </div>
+                        ${question.type === 'enum' ? `
+                            <div class="form-group">
+                                <label>Options (one per line)</label>
+                                <textarea id="options-${index}" rows="4">${(question.options || []).join('\n')}</textarea>
+                            </div>
+                        ` : ''}
                         <div class="form-row">
                             <button class="btn-primary" onclick="saveQuestion(${index})">💾 Save</button>
                             <button class="btn-secondary" onclick="cancelEdit(${index})">❌ Cancel</button>
@@ -906,6 +1041,21 @@
                 ...customData
             };
             
+            // Add show_if condition if provided
+            if (customData.show_if) {
+                newQuestion.show_if = customData.show_if;
+            }
+            
+            // Add options for enum types
+            if (customData.options && Array.isArray(customData.options)) {
+                newQuestion.options = customData.options;
+            }
+            
+            // Add default value if provided
+            if (customData.default !== undefined) {
+                newQuestion.default = customData.default;
+            }
+            
             chartData.questions.questions.push(newQuestion);
             displayQuestions(chartData.questions.questions);
             updateBackend();
@@ -946,6 +1096,41 @@
             question.type = document.getElementById(`type-${index}`).value;
             question.group = document.getElementById(`group-${index}`).value;
             question.required = document.getElementById(`required-${index}`).checked;
+            
+            // Handle show_if condition
+            const showIf = document.getElementById(`showif-${index}`).value.trim();
+            if (showIf) {
+                question.show_if = showIf;
+            } else {
+                delete question.show_if;
+            }
+            
+            // Handle default value
+            const defaultValue = document.getElementById(`default-${index}`).value.trim();
+            if (defaultValue) {
+                // Convert to appropriate type
+                if (question.type === 'boolean') {
+                    question.default = defaultValue.toLowerCase() === 'true';
+                } else if (question.type === 'int') {
+                    question.default = parseInt(defaultValue) || 0;
+                } else {
+                    question.default = defaultValue;
+                }
+            } else {
+                delete question.default;
+            }
+            
+            // Handle enum options
+            if (question.type === 'enum') {
+                const optionsText = document.getElementById(`options-${index}`).value.trim();
+                if (optionsText) {
+                    question.options = optionsText.split('\n').map(opt => opt.trim()).filter(opt => opt);
+                } else {
+                    delete question.options;
+                }
+            } else {
+                delete question.options;
+            }
             
             displayQuestions(chartData.questions.questions);
             updateBackend();
@@ -1297,10 +1482,14 @@
                 case 'enum':
                     const options = question.options || ['Option 1', 'Option 2', 'Option 3'];
                     return `<select style="${baseStyle}">
-                        ${options.map(opt => 
-                            `<option value="${opt}" ${opt === question.default ? 'selected' : ''}>${opt}</option>`
-                        ).join('')}
+                        ${options.map(opt => {
+                            const value = typeof opt === 'object' ? opt.value : opt;
+                            const label = typeof opt === 'object' ? opt.label : opt;
+                            return `<option value="${value}" ${value === question.default ? 'selected' : ''}>${label}</option>`;
+                        }).join('')}
                     </select>`;
+                case 'password':
+                    return `<input type="password" value="${question.default || ''}" placeholder="Enter ${question.label.toLowerCase()}" style="${baseStyle}">`;
                 default:
                     return `<input type="text" value="${question.default || ''}" placeholder="Enter ${question.label.toLowerCase()}" style="${baseStyle}">`;
             }
@@ -1329,6 +1518,434 @@
             }
         }
 
+        // Advanced Question Editor Functions
+        function toggleAdvancedEditor() {
+            const editor = document.getElementById('advancedEditor');
+            editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function handleTypeChange() {
+            const type = document.getElementById('advType').value;
+            const enumOptions = document.getElementById('enumOptions');
+            enumOptions.style.display = type === 'enum' ? 'block' : 'none';
+        }
+        
+        function addEnumOption() {
+            const optionsList = document.getElementById('optionsList');
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option-item';
+            optionDiv.innerHTML = `
+                <input type="text" placeholder="Option label" class="option-label">
+                <input type="text" placeholder="Option value" class="option-value">
+                <button type="button" class="remove-option" onclick="this.parentElement.remove()">−</button>
+            `;
+            optionsList.appendChild(optionDiv);
+        }
+        
+        function clearAdvancedEditor() {
+            document.getElementById('advVariable').value = '';
+            document.getElementById('advLabel').value = '';
+            document.getElementById('advDescription').value = '';
+            document.getElementById('advType').value = 'string';
+            document.getElementById('advGroup').value = '';
+            document.getElementById('advDefault').value = '';
+            document.getElementById('advShowIf').value = '';
+            document.getElementById('advRequired').checked = false;
+            document.getElementById('optionsList').innerHTML = '';
+            handleTypeChange();
+        }
+        
+        function addAdvancedQuestion() {
+            const variable = document.getElementById('advVariable').value.trim();
+            const label = document.getElementById('advLabel').value.trim();
+            const description = document.getElementById('advDescription').value.trim();
+            const type = document.getElementById('advType').value;
+            const group = document.getElementById('advGroup').value.trim();
+            const defaultValue = document.getElementById('advDefault').value.trim();
+            const showIf = document.getElementById('advShowIf').value.trim();
+            const required = document.getElementById('advRequired').checked;
+            
+            if (!variable || !label) {
+                alert('Variable and Label are required');
+                return;
+            }
+            
+            const questionData = {
+                label,
+                description,
+                type,
+                group: group || 'General',
+                required
+            };
+            
+            if (defaultValue) {
+                if (type === 'boolean') {
+                    questionData.default = defaultValue.toLowerCase() === 'true';
+                } else if (type === 'int') {
+                    questionData.default = parseInt(defaultValue) || 0;
+                } else {
+                    questionData.default = defaultValue;
+                }
+            }
+            
+            if (showIf) {
+                questionData.show_if = showIf;
+            }
+            
+            if (type === 'enum') {
+                const optionItems = document.querySelectorAll('.option-item');
+                const options = [];
+                optionItems.forEach(item => {
+                    const label = item.querySelector('.option-label').value.trim();
+                    const value = item.querySelector('.option-value').value.trim();
+                    if (label && value) {
+                        options.push({ label, value });
+                    } else if (label) {
+                        options.push(label);
+                    }
+                });
+                if (options.length > 0) {
+                    questionData.options = options;
+                }
+            }
+            
+            addQuestion(variable, questionData.default || '', questionData);
+            clearAdvancedEditor();
+        }
+        
+        // AI Compare Section Template
+        function addAICompareSection() {
+            const questions = [
+                {
+                    variable: 'advancedConfig',
+                    label: 'Enable Advanced',
+                    description: 'Show advanced settings like Images, Pipeline Integration, and Automation. Keep disabled for simplified deployment.',
+                    type: 'boolean',
+                    default: false,
+                    group: 'Main Configuration'
+                },
+                {
+                    variable: 'ollama.gpu.enabled',
+                    label: 'Enable GPU',
+                    description: 'Enable GPU acceleration for Ollama. Requires a node with GPU drivers and the k8s device plugin installed.',
+                    type: 'boolean',
+                    default: false,
+                    group: 'Main Configuration'
+                },
+                {
+                    variable: 'ollama.hardware.type',
+                    label: 'Ollama GPU Type',
+                    description: 'Select the target GPU hardware architecture for the Ollama deployment.',
+                    type: 'enum',
+                    required: true,
+                    default: 'nvidia',
+                    show_if: 'ollama.gpu.enabled=true',
+                    options: [
+                        { label: 'NVIDIA GPU (amd64)', value: 'nvidia' },
+                        { label: 'Apple Silicon / CPU (arm64)', value: 'apple' }
+                    ],
+                    group: 'Main Configuration'
+                },
+                {
+                    variable: 'frontend.enabled',
+                    label: 'Enable Load Simulator',
+                    description: 'Deploy HTTP load simulator for traffic generation and observability monitoring. Shows detailed settings when enabled.',
+                    type: 'boolean',
+                    default: false,
+                    group: 'Main Configuration'
+                },
+                {
+                    variable: 'aiCompare.observability.enabled',
+                    label: 'Enable Observability',
+                    description: 'Enable OpenTelemetry observability for GenAI monitoring, cost tracking, and performance metrics. Shows detailed settings when enabled.',
+                    type: 'boolean',
+                    default: false,
+                    group: 'Main Configuration'
+                },
+                {
+                    variable: 'ollama.resources.requests.cpu',
+                    label: 'Ollama CPU Request',
+                    description: 'The amount of CPU to reserve for the main Ollama container (e.g., \'500m\', \'1\').',
+                    type: 'string',
+                    default: '2',
+                    show_if: 'advancedConfig=true',
+                    group: 'Ollama Settings'
+                },
+                {
+                    variable: 'ollama.resources.requests.memory',
+                    label: 'Ollama Memory Request',
+                    description: 'The amount of memory to reserve for the main Ollama container (e.g., \'1Gi\', \'2048Mi\').',
+                    type: 'string',
+                    default: '2Gi',
+                    show_if: 'advancedConfig=true',
+                    group: 'Ollama Settings'
+                },
+                {
+                    variable: 'ollama.persistence.enabled',
+                    label: 'Enable Ollama Model Persistence',
+                    description: 'If true, a PersistentVolumeClaim will be created to store Ollama models.',
+                    type: 'boolean',
+                    default: false,
+                    group: 'Ollama Settings'
+                },
+                {
+                    variable: 'ollama.persistence.size',
+                    label: 'Ollama Model Storage Size',
+                    description: 'The size of the PersistentVolumeClaim for Ollama models (e.g., \'10Gi\', \'50Gi\').',
+                    type: 'string',
+                    default: '10Gi',
+                    show_if: 'ollama.persistence.enabled=true',
+                    group: 'Ollama Settings'
+                }
+            ];
+            
+            questions.forEach(q => {
+                addQuestion(q.variable, q.default, q);
+            });
+        }
+        
+        // Main Configuration Section
+        function addMainConfigSection() {
+            const questions = [
+                {
+                    variable: 'advancedConfig',
+                    label: 'Enable Advanced',
+                    description: 'Show advanced settings. Keep disabled for simplified deployment.',
+                    type: 'boolean',
+                    default: false,
+                    group: 'Main Configuration'
+                },
+                {
+                    variable: 'app.name',
+                    label: 'Application Name',
+                    description: 'Name of the application deployment',
+                    type: 'string',
+                    required: true,
+                    group: 'Main Configuration'
+                },
+                {
+                    variable: 'app.version',
+                    label: 'Application Version',
+                    description: 'Version tag for the application',
+                    type: 'string',
+                    default: 'latest',
+                    show_if: 'advancedConfig=true',
+                    group: 'Main Configuration'
+                },
+                {
+                    variable: 'app.environment',
+                    label: 'Environment',
+                    description: 'Deployment environment',
+                    type: 'enum',
+                    default: 'production',
+                    options: ['development', 'staging', 'production'],
+                    group: 'Main Configuration'
+                }
+            ];
+            
+            questions.forEach(q => {
+                addQuestion(q.variable, q.default, q);
+            });
+        }
+        
+        // Networking Section
+        function addNetworkingSection() {
+            const questions = [
+                {
+                    variable: 'service.type',
+                    label: 'Service Type',
+                    description: 'Method to expose the service.',
+                    type: 'enum',
+                    required: true,
+                    default: 'LoadBalancer',
+                    options: ['ClusterIP', 'NodePort', 'LoadBalancer'],
+                    group: 'Networking'
+                },
+                {
+                    variable: 'service.port',
+                    label: 'Service Port',
+                    description: 'Port number for the service',
+                    type: 'int',
+                    default: 8080,
+                    group: 'Networking'
+                },
+                {
+                    variable: 'ingress.enabled',
+                    label: 'Enable Ingress',
+                    description: 'Enable ingress for external access',
+                    type: 'boolean',
+                    default: false,
+                    group: 'Networking'
+                },
+                {
+                    variable: 'ingress.className',
+                    label: 'Ingress Class',
+                    description: 'Ingress controller class name',
+                    type: 'enum',
+                    default: 'nginx',
+                    show_if: 'ingress.enabled=true',
+                    options: ['nginx', 'traefik', 'alb', 'gce'],
+                    group: 'Networking'
+                },
+                {
+                    variable: 'ingress.host',
+                    label: 'Ingress Host',
+                    description: 'Hostname for ingress (e.g., app.example.com)',
+                    type: 'string',
+                    show_if: 'ingress.enabled=true',
+                    group: 'Networking'
+                }
+            ];
+            
+            questions.forEach(q => {
+                addQuestion(q.variable, q.default, q);
+            });
+        }
+        
+        // Observability Section
+        function addObservabilitySection() {
+            const questions = [
+                {
+                    variable: 'observability.enabled',
+                    label: 'Enable OpenTelemetry Observability',
+                    description: 'Enable OpenLIT observability for request tracing, monitoring, and performance metrics.',
+                    type: 'boolean',
+                    default: false,
+                    group: 'Observability Settings'
+                },
+                {
+                    variable: 'observability.otlpEndpoint',
+                    label: 'OpenTelemetry Collector Endpoint',
+                    description: 'OTLP endpoint URL for sending telemetry data',
+                    type: 'string',
+                    default: 'http://opentelemetry-collector.observability.svc.cluster.local:4318',
+                    show_if: 'observability.enabled=true',
+                    group: 'Observability Settings'
+                },
+                {
+                    variable: 'observability.collectGpuStats',
+                    label: 'Enable GPU Statistics Collection',
+                    description: 'Collect GPU utilization and memory usage statistics. Requires GPU nodes.',
+                    type: 'boolean',
+                    default: false,
+                    show_if: 'observability.enabled=true',
+                    group: 'Observability Settings'
+                },
+                {
+                    variable: 'observability.sampleRate',
+                    label: 'Trace Sample Rate',
+                    description: 'Percentage of traces to sample (0.0 to 1.0)',
+                    type: 'string',
+                    default: '0.1',
+                    show_if: 'observability.enabled=true',
+                    group: 'Observability Settings'
+                }
+            ];
+            
+            questions.forEach(q => {
+                addQuestion(q.variable, q.default, q);
+            });
+        }
+        
+        // Security Section
+        function addSecuritySection() {
+            const questions = [
+                {
+                    variable: 'security.enabled',
+                    label: 'Enable Security Features',
+                    description: 'Enable advanced security configurations and integrations',
+                    type: 'boolean',
+                    default: false,
+                    group: 'Security Settings'
+                },
+                {
+                    variable: 'security.neuvector.enabled',
+                    label: 'Enable NeuVector Integration',
+                    description: 'Automatically configure NeuVector DLP sensors. Requires NeuVector to be deployed.',
+                    type: 'boolean',
+                    default: false,
+                    show_if: 'security.enabled=true',
+                    group: 'Security Settings'
+                },
+                {
+                    variable: 'security.neuvector.controllerUrl',
+                    label: 'NeuVector Controller URL',
+                    description: 'URL to the NeuVector controller service for API configuration',
+                    type: 'string',
+                    default: 'https://neuvector-svc-controller.neuvector.svc.cluster.local:10443',
+                    show_if: 'security.neuvector.enabled=true',
+                    group: 'Security Settings'
+                },
+                {
+                    variable: 'security.neuvector.username',
+                    label: 'NeuVector Admin Username',
+                    description: 'Administrative username for NeuVector API access',
+                    type: 'string',
+                    default: 'admin',
+                    show_if: 'security.neuvector.enabled=true',
+                    group: 'Security Settings'
+                },
+                {
+                    variable: 'security.neuvector.password',
+                    label: 'NeuVector Admin Password',
+                    description: 'Administrative password for NeuVector API access',
+                    type: 'password',
+                    default: 'admin',
+                    show_if: 'security.neuvector.enabled=true',
+                    group: 'Security Settings'
+                }
+            ];
+            
+            questions.forEach(q => {
+                addQuestion(q.variable, q.default, q);
+            });
+        }
+        
+        // Images Section
+        function addImageSection() {
+            const questions = [
+                {
+                    variable: 'image.repository',
+                    label: 'Container Image Repository',
+                    description: 'Container image repository URL',
+                    type: 'string',
+                    required: true,
+                    group: 'Images'
+                },
+                {
+                    variable: 'image.tag',
+                    label: 'Image Tag',
+                    description: 'Container image tag',
+                    type: 'string',
+                    default: 'latest',
+                    show_if: 'advancedConfig=true',
+                    group: 'Images'
+                },
+                {
+                    variable: 'image.pullPolicy',
+                    label: 'Image Pull Policy',
+                    description: 'Kubernetes image pull policy',
+                    type: 'enum',
+                    default: 'IfNotPresent',
+                    show_if: 'advancedConfig=true',
+                    options: ['Always', 'IfNotPresent', 'Never'],
+                    group: 'Images'
+                },
+                {
+                    variable: 'imagePullSecrets',
+                    label: 'Image Pull Secrets',
+                    description: 'Kubernetes secrets for private registries (comma-separated)',
+                    type: 'string',
+                    show_if: 'advancedConfig=true',
+                    group: 'Images'
+                }
+            ];
+            
+            questions.forEach(q => {
+                addQuestion(q.variable, q.default, q);
+            });
+        }
+        
         // Close modal on outside click
         window.onclick = function(event) {
             const modal = document.getElementById('previewModal');
