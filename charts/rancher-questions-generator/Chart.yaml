@@ -18,8 +18,3 @@ keywords:
   - kubernetes
   - form-builder
   - ui
-annotations:
-  category: Development Tools
-  catalog.cattle.io/certified: rancher
-  catalog.cattle.io/namespace: rancher-questions-generator
-  catalog.cattle.io/release-name: rancher-questions-generator
