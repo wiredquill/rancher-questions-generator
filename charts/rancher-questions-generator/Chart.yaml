@@ -2,8 +2,8 @@ apiVersion: v2
 name: rancher-questions-generator
 description: A professional-grade web application for creating questions.yaml files for Helm charts with an intuitive drag-and-drop interface, comprehensive Kubernetes deployment patterns, and advanced template support
 type: application
-version: 1.6.0
-appVersion: "1.6.0"
+version: 1.7.0
+appVersion: "1.7.0"
 home: https://github.com/wiredquill/rancher-questions-generator
 sources:
   - https://github.com/wiredquill/rancher-questions-generator
