@@ -30,10 +30,9 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "rancher-questions-generator.serviceAccountName" . }}
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 101
-        runAsGroup: 101
-        fsGroup: 101
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
       initContainers:
       - name: copy-frontend
         image: alpine/git:latest
@@ -67,7 +66,8 @@ spec:
               
               # Create nginx temp directories with proper permissions
               mkdir -p /var/cache/nginx/client_temp /var/cache/nginx/proxy_temp /var/cache/nginx/fastcgi_temp /var/cache/nginx/uwsgi_temp /var/cache/nginx/scgi_temp
-              chown -R 101:101 /var/cache/nginx /var/log/nginx /var/run /usr/share/nginx/html /etc/nginx/conf.d
+              # Create nginx temp directories (root can create them)
+              mkdir -p /var/cache/nginx /var/log/nginx /var/run
             fi
         volumeMounts:
         - name: nginx-html
@@ -75,19 +75,13 @@ spec:
         - name: nginx-config
           mountPath: /etc/nginx/conf.d
         securityContext:
-          runAsNonRoot: true
-          runAsUser: 101
-          runAsGroup: 101
-          capabilities:
-            drop: ["ALL"]
+          runAsNonRoot: false
+          runAsUser: 0
       containers:
       - name: frontend
         securityContext:
-          runAsNonRoot: true
-          runAsUser: 101
-          runAsGroup: 101
-          capabilities:
-            drop: ["ALL"]
+          runAsNonRoot: false
+          runAsUser: 0
         image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
         imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
         ports:

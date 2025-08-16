@@ -30,10 +30,9 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "rancher-questions-generator.serviceAccountName" . }}
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 2000
-        fsGroup: 2000
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
       initContainers:
       - name: copy-source
         image: alpine/git:latest
@@ -44,25 +43,19 @@ spec:
             if [ ! -d "/app/.git" ]; then
               git clone https://github.com/wiredquill/rancher-questions-generator.git /tmp/repo
               cp -r /tmp/repo/backend/* /app/
-              chown -R 1000:2000 /app
+              # Root can copy files properly
             fi
         volumeMounts:
         - name: source-code
           mountPath: /app
         securityContext:
-          runAsNonRoot: true
-          runAsUser: 1000
-          runAsGroup: 2000
-          capabilities:
-            drop: ["ALL"]
+          runAsNonRoot: false
+          runAsUser: 0
       containers:
       - name: backend
         securityContext:
-          runAsNonRoot: true
-          runAsUser: 1000
-          runAsGroup: 2000
-          capabilities:
-            drop: ["ALL"]
+          runAsNonRoot: false
+          runAsUser: 0
         image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
         imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
         command: ["sh"]
