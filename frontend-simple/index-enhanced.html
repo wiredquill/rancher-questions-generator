@@ -619,11 +619,25 @@
         }
 
         async function addCommonRepositories() {
-            // The backend now initializes with default repositories
-            loadRepositories();
+            showMessage('repoStatus', 'loading', 'Refreshing repositories...');
+            
+            try {
+                // The backend already has default repositories loaded, just refresh the display
+                await loadRepositories();
+                showMessage('repoStatus', 'success', 'Common repositories are already available! Check the list below.');
+            } catch (error) {
+                showMessage('repoStatus', 'error', `Error refreshing repositories: ${error.message}`);
+            }
         }
 
         async function promptForSUSERepo() {
+            // Check if SUSE Application Collection already exists
+            const existingRepo = repositories.find(repo => repo.name === 'suse-application-collection');
+            if (existingRepo) {
+                showMessage('repoStatus', 'success', 'SUSE Application Collection is already configured and ready to use!');
+                return;
+            }
+            
             const username = prompt('Enter your SUSE Application Collection username:');
             if (!username) return;
             
@@ -631,9 +645,9 @@
             if (!password) return;
             
             const payload = {
-                name: 'suse-application-collection',
+                name: 'suse-application-collection-auth',
                 url: 'oci://dp.apps.rancher.io/charts',
-                description: 'SUSE Application Collection - Enterprise applications for Rancher',
+                description: 'SUSE Application Collection with Authentication',
                 auth: { username, password }
             };
             
