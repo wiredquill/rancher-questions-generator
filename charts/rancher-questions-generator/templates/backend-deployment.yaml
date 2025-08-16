@@ -44,6 +44,7 @@ spec:
             if [ ! -d "/app/.git" ]; then
               git clone https://github.com/wiredquill/rancher-questions-generator.git /tmp/repo
               cp -r /tmp/repo/backend/* /app/
+              chown -R 1000:2000 /app
             fi
         volumeMounts:
         - name: source-code
