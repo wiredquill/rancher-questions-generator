@@ -75,9 +75,12 @@
         /* Questions */
         .question-item { 
             margin: 15px 0; padding: 20px; border: 1px solid #667eea; background: #f7fafc; 
-            border-radius: 8px; position: relative; transition: all 0.2s;
+            border-radius: 8px; position: relative; transition: all 0.2s; cursor: move;
         }
+        .question-item.dragging { opacity: 0.5; transform: rotate(2deg); }
+        .question-item.drag-over { border-color: #48bb78; background: #f0fff4; }
         .question-item:hover { box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15); }
+        .question-item [disabled] { opacity: 0.5; cursor: not-allowed; }
         
         .question-header { display: flex; justify-content: space-between; align-items: flex-start; 
                           margin-bottom: 12px; }
@@ -161,6 +164,49 @@
         .drop-zone { min-height: 120px; border: 2px dashed #cbd5e0; padding: 30px; text-align: center; 
                     margin: 20px 0; border-radius: 8px; color: #718096; transition: all 0.2s; }
         .drop-zone.dragover { border-color: #667eea; background: #eef2ff; color: #667eea; }
+        
+        /* Rancher Preview Styles */
+        .rancher-preview { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                          background: #f5f5f5; min-height: 500px; }
+        .rancher-header { background: #1976d2; color: white; padding: 20px; text-align: center; }
+        .rancher-header h2 { margin: 0; font-size: 24px; }
+        .rancher-subtitle { margin: 8px 0 0 0; opacity: 0.9; }
+        .rancher-form { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .rancher-section { background: white; border: 1px solid #ddd; border-radius: 4px; 
+                          margin-bottom: 20px; overflow: hidden; }
+        .rancher-section-header { background: #f5f5f5; padding: 15px; border-bottom: 1px solid #ddd; }
+        .rancher-section-title { margin: 0; color: #333; font-size: 16px; font-weight: 600; }
+        .rancher-section-content { padding: 20px; }
+        .rancher-field { margin-bottom: 20px; }
+        .rancher-field-label { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .rancher-field-label label { font-weight: 500; color: #333; }
+        .required { color: #d32f2f; font-weight: bold; }
+        .conditional-badge { background: #ff9800; color: white; padding: 2px 6px; 
+                           border-radius: 3px; font-size: 11px; }
+        .rancher-field-description { color: #666; font-size: 14px; margin-bottom: 8px; }
+        .rancher-input, .rancher-textarea, .rancher-select { width: 100%; padding: 8px 12px; 
+                                                            border: 1px solid #ccc; border-radius: 4px; 
+                                                            font-size: 14px; }
+        .rancher-input:focus, .rancher-textarea:focus, .rancher-select:focus { 
+            border-color: #1976d2; outline: none; box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2); }
+        .rancher-textarea { min-height: 80px; resize: vertical; }
+        .rancher-select-wrapper { position: relative; }
+        .rancher-select-arrow { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); 
+                               pointer-events: none; color: #666; }
+        .rancher-checkbox-wrapper { display: flex; align-items: center; }
+        .rancher-checkbox { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .rancher-checkbox input { margin: 0; }
+        .rancher-field-meta { margin-top: 8px; font-size: 12px; color: #999; 
+                             display: flex; gap: 12px; align-items: center; }
+        .rancher-field-meta code { background: #f5f5f5; padding: 2px 4px; border-radius: 2px; }
+        .show-if { background: #e3f2fd; color: #1976d2; padding: 2px 6px; border-radius: 3px; }
+        .rancher-actions { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; 
+                          display: flex; gap: 12px; justify-content: flex-end; }
+        .rancher-btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; 
+                      font-size: 14px; font-weight: 500; }
+        .rancher-btn-primary { background: #1976d2; color: white; }
+        .rancher-btn-secondary { background: #f5f5f5; color: #333; border: 1px solid #ccc; }
+        .icon-helm:before { content: '⛵'; margin-right: 8px; }
         
         /* Modal */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; 
@@ -941,10 +987,16 @@
             }
             
             container.innerHTML = questions.map((question, index) => `
-                <div class="question-item" data-index="${index}">
+                <div class="question-item" data-index="${index}" draggable="true" 
+                     ondragstart="startQuestionDrag(event, ${index})" 
+                     ondragend="endQuestionDrag(event)"
+                     ondragover="allowQuestionDrop(event)" 
+                     ondrop="dropQuestion(event, ${index})">
                     <div class="question-header">
-                        <div class="question-title">${question.label}</div>
+                        <div class="question-title">📋 ${question.label}</div>
                         <div class="question-controls">
+                            <button class="btn-secondary btn-small" onclick="moveQuestionUp(${index})" ${index === 0 ? 'disabled' : ''}>⬆️</button>
+                            <button class="btn-secondary btn-small" onclick="moveQuestionDown(${index})" ${index === questions.length - 1 ? 'disabled' : ''}>⬇️</button>
                             <button class="btn-secondary btn-small" onclick="editQuestion(${index})">✏️</button>
                             <button class="btn-danger btn-small" onclick="removeQuestion(${index})">🗑️</button>
                         </div>
@@ -1459,23 +1511,56 @@
             const modal = document.getElementById('previewModal');
             const content = document.getElementById('previewContent');
             
-            // Generate preview HTML
+            // Generate Rancher-style preview
             const questions = chartData.questions.questions;
+            const groupedQuestions = {};
+            questions.forEach(q => {
+                const group = q.group || 'General';
+                if (!groupedQuestions[group]) groupedQuestions[group] = [];
+                groupedQuestions[group].push(q);
+            });
+            
             content.innerHTML = `
-                <div style="max-width: 600px; margin: 0 auto;">
-                    <h3 style="text-align: center; margin-bottom: 30px;">📋 Form Preview</h3>
-                    ${questions.map(q => `
-                        <div style="margin: 25px 0; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8f9fa;">
-                            <label style="display: block; font-weight: 600; margin-bottom: 8px;">
-                                ${q.label} ${q.required ? '<span style="color: #e53e3e;">*</span>' : ''}
-                            </label>
-                            ${q.description ? `<p style="color: #718096; font-size: 14px; margin: 0 0 12px 0;">${q.description}</p>` : ''}
-                            ${generatePreviewInput(q)}
-                            <div style="margin-top: 8px; font-size: 12px; color: #a0aec0;">
-                                Variable: ${q.variable} | Type: ${q.type || 'string'}${q.group ? ` | Group: ${q.group}` : ''}
+                <div class="rancher-preview">
+                    <div class="rancher-header">
+                        <h2><i class="icon icon-helm"></i> Install Chart</h2>
+                        <p class="rancher-subtitle">Configure your application settings</p>
+                    </div>
+                    
+                    <div class="rancher-form">
+                        ${Object.entries(groupedQuestions).map(([groupName, groupQuestions]) => `
+                            <div class="rancher-section">
+                                <div class="rancher-section-header">
+                                    <h3 class="rancher-section-title">${groupName}</h3>
+                                    <div class="rancher-section-divider"></div>
+                                </div>
+                                <div class="rancher-section-content">
+                                    ${groupQuestions.map(q => `
+                                        <div class="rancher-field ${q.show_if ? 'conditional' : ''}">
+                                            <div class="rancher-field-label">
+                                                <label>${q.label}</label>
+                                                ${q.required ? '<span class="required">*</span>' : ''}
+                                                ${q.show_if ? '<span class="conditional-badge">Conditional</span>' : ''}
+                                            </div>
+                                            ${q.description ? `<div class="rancher-field-description">${q.description}</div>` : ''}
+                                            <div class="rancher-field-input">
+                                                ${generateRancherPreviewInput(q)}
+                                            </div>
+                                            <div class="rancher-field-meta">
+                                                <code>${q.variable}</code>
+                                                ${q.show_if ? `<span class="show-if">Show if: ${q.show_if}</span>` : ''}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
                             </div>
+                        `).join('')}
+                        
+                        <div class="rancher-actions">
+                            <button class="rancher-btn rancher-btn-primary">Install</button>
+                            <button class="rancher-btn rancher-btn-secondary">Cancel</button>
                         </div>
-                    `).join('')}
+                    </div>
                 </div>
             `;
             
@@ -1509,8 +1594,106 @@
             }
         }
 
+        function generateRancherPreviewInput(question) {
+            switch (question.type) {
+                case 'boolean':
+                    return `<div class="rancher-checkbox-wrapper">
+                        <label class="rancher-checkbox">
+                            <input type="checkbox" ${question.default === true ? 'checked' : ''}>
+                            <span class="rancher-checkbox-custom"></span>
+                            <span class="rancher-checkbox-label">${question.label}</span>
+                        </label>
+                    </div>`;
+                case 'enum':
+                    return `<div class="rancher-select-wrapper">
+                        <select class="rancher-select">
+                            <option value="">Select ${question.label}</option>
+                            ${(question.options || []).map(opt => 
+                                `<option value="${opt}" ${question.default === opt ? 'selected' : ''}>${opt}</option>`
+                            ).join('')}
+                        </select>
+                        <i class="rancher-select-arrow">▼</i>
+                    </div>`;
+                case 'int':
+                case 'float':
+                    return `<input type="number" class="rancher-input" value="${question.default || ''}" placeholder="Enter ${question.type}">`;
+                case 'multiline':
+                    return `<textarea class="rancher-textarea" placeholder="Enter ${question.label.toLowerCase()}...">${question.default || ''}</textarea>`;
+                case 'storageclass':
+                    return `<div class="rancher-select-wrapper">
+                        <select class="rancher-select">
+                            <option value="">Default StorageClass</option>
+                            <option value="longhorn">longhorn</option>
+                            <option value="local-path">local-path</option>
+                            <option value="nfs-client">nfs-client</option>
+                        </select>
+                        <i class="rancher-select-arrow">▼</i>
+                    </div>`;
+                default:
+                    return `<input type="text" class="rancher-input" value="${question.default || ''}" placeholder="Enter ${question.label.toLowerCase()}">`;
+            }
+        }
+
         function closePreview() {
             document.getElementById('previewModal').classList.remove('active');
+        }
+
+        // Question reordering functions
+        let draggedQuestionIndex = null;
+
+        function startQuestionDrag(event, index) {
+            draggedQuestionIndex = index;
+            event.target.classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
+        }
+
+        function endQuestionDrag(event) {
+            event.target.classList.remove('dragging');
+            document.querySelectorAll('.question-item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
+            draggedQuestionIndex = null;
+        }
+
+        function allowQuestionDrop(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            if (event.currentTarget.classList.contains('question-item')) {
+                event.currentTarget.classList.add('drag-over');
+            }
+        }
+
+        function dropQuestion(event, targetIndex) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('drag-over');
+            
+            if (draggedQuestionIndex !== null && draggedQuestionIndex !== targetIndex) {
+                reorderQuestion(draggedQuestionIndex, targetIndex);
+            }
+        }
+
+        function moveQuestionUp(index) {
+            if (index > 0) {
+                reorderQuestion(index, index - 1);
+            }
+        }
+
+        function moveQuestionDown(index) {
+            if (index < chartData.questions.questions.length - 1) {
+                reorderQuestion(index, index + 1);
+            }
+        }
+
+        function reorderQuestion(fromIndex, toIndex) {
+            if (!chartData || !chartData.questions.questions) return;
+            
+            const questions = chartData.questions.questions;
+            const movedQuestion = questions.splice(fromIndex, 1)[0];
+            questions.splice(toIndex, 0, movedQuestion);
+            
+            // Update the chart data
+            updateChartData();
+            displayQuestions(questions);
         }
 
         // Utility functions
