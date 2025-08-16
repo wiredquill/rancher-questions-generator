@@ -624,10 +624,10 @@
         }
 
         async function promptForSUSERepo() {
-            const username = prompt('Enter your SUSE Application Collection username:', 'erquill@suse.com');
+            const username = prompt('Enter your SUSE Application Collection username:');
             if (!username) return;
             
-            const password = prompt('Enter your SUSE Application Collection password:', 'aG56ZGtvZnljeHZiZ2J5dHBmaXhvbGZtdGJ3enFwcGpucXN1eWxzdmVxeXpqaXZzcG9hbXZkbXNzd3FzbWplcQ==');
+            const password = prompt('Enter your SUSE Application Collection password:');
             if (!password) return;
             
             const payload = {

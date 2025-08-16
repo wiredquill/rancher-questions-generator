@@ -1,0 +1,60 @@
+# Multi-stage Dockerfile for Backend - Production Optimized
+# Based on Docker Build Agent specifications
+
+# Build stage
+FROM golang:1.21-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates tzdata
+
+# Create non-root user for build
+RUN adduser -D -g '' builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy go mod files first for dependency caching
+COPY go.mod go.sum ./
+
+# Download dependencies (cached layer)
+RUN go mod download && go mod verify
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags='-w -s -extldflags "-static"' \
+    -a -installsuffix cgo \
+    -o main cmd/main.go
+
+# Runtime stage - Minimal attack surface
+FROM scratch
+
+# Copy CA certificates for HTTPS requests
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+# Copy timezone data
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+
+# Copy user information
+COPY --from=builder /etc/passwd /etc/passwd
+
+# Copy the compiled binary
+COPY --from=builder /app/main /app/main
+
+# Create non-root user (1000:2000)
+USER 1000:2000
+
+# Set working directory
+WORKDIR /app
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD ["/app/main", "--health-check"]
+
+# Expose port
+EXPOSE 8080
+
+# Run the application
+CMD ["./main"]
