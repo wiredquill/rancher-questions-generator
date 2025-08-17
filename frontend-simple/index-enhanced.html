@@ -377,10 +377,15 @@
                                 <div class="template-desc">Primary application settings with advanced toggle</div>
                                 <div class="template-questions">4 questions with show_if conditions</div>
                             </div>
-                            <div class="template-item" onclick="addNetworkingSection()">
-                                <div class="template-title">🌐 Networking</div>
-                                <div class="template-desc">Service types, ingress, and load balancer configuration</div>
-                                <div class="template-questions">5 questions</div>
+                            <div class="template-item" onclick="addServiceSection()">
+                                <div class="template-title">🔌 Service</div>
+                                <div class="template-desc">Service type, ports, and load balancer configuration</div>
+                                <div class="template-questions">4 questions</div>
+                            </div>
+                            <div class="template-item" onclick="addIngressSection()">
+                                <div class="template-title">🌍 Ingress</div>
+                                <div class="template-desc">Ingress controller, hostname, and external access</div>
+                                <div class="template-questions">6 questions with dependencies</div>
                             </div>
                             <div class="template-item" onclick="addObservabilitySection()">
                                 <div class="template-title">📊 Observability</div>
@@ -1945,18 +1950,18 @@
             });
         }
         
-        // Networking Section
-        function addNetworkingSection() {
+        // Service Section
+        function addServiceSection() {
             const questions = [
                 {
                     variable: 'service.type',
                     label: 'Service Type',
-                    description: 'Method to expose the service.',
+                    description: 'Method to expose the service within the cluster or externally.',
                     type: 'enum',
                     required: true,
                     default: 'LoadBalancer',
                     options: ['ClusterIP', 'NodePort', 'LoadBalancer'],
-                    group: 'Networking'
+                    group: 'Service Configuration'
                 },
                 {
                     variable: 'service.port',
@@ -1964,15 +1969,42 @@
                     description: 'Port number for the service',
                     type: 'int',
                     default: 8080,
-                    group: 'Networking'
+                    required: true,
+                    group: 'Service Configuration'
                 },
+                {
+                    variable: 'service.targetPort',
+                    label: 'Target Port',
+                    description: 'Port number on the pod that receives traffic',
+                    type: 'int',
+                    default: 8080,
+                    group: 'Service Configuration'
+                },
+                {
+                    variable: 'service.nodePort',
+                    label: 'Node Port',
+                    description: 'Static port on each node (30000-32767). Only used with NodePort service type.',
+                    type: 'int',
+                    show_if: 'service.type=NodePort',
+                    group: 'Service Configuration'
+                }
+            ];
+            
+            questions.forEach(q => {
+                addQuestion(q.variable, q.default, q);
+            });
+        }
+        
+        // Ingress Section
+        function addIngressSection() {
+            const questions = [
                 {
                     variable: 'ingress.enabled',
                     label: 'Enable Ingress',
-                    description: 'Enable ingress for external access',
+                    description: 'Enable ingress for external HTTP/HTTPS access',
                     type: 'boolean',
                     default: false,
-                    group: 'Networking'
+                    group: 'Ingress Configuration'
                 },
                 {
                     variable: 'ingress.className',
@@ -1981,8 +2013,8 @@
                     type: 'enum',
                     default: 'nginx',
                     show_if: 'ingress.enabled=true',
-                    options: ['nginx', 'traefik', 'alb', 'gce'],
-                    group: 'Networking'
+                    options: ['nginx', 'traefik', 'haproxy', 'istio', 'alb', 'gce'],
+                    group: 'Ingress Configuration'
                 },
                 {
                     variable: 'ingress.host',
@@ -1990,7 +2022,34 @@
                     description: 'Hostname for ingress (e.g., app.example.com)',
                     type: 'string',
                     show_if: 'ingress.enabled=true',
-                    group: 'Networking'
+                    required: true,
+                    group: 'Ingress Configuration'
+                },
+                {
+                    variable: 'ingress.path',
+                    label: 'Ingress Path',
+                    description: 'URL path for the ingress rule',
+                    type: 'string',
+                    default: '/',
+                    show_if: 'ingress.enabled=true',
+                    group: 'Ingress Configuration'
+                },
+                {
+                    variable: 'ingress.tls.enabled',
+                    label: 'Enable TLS/SSL',
+                    description: 'Enable HTTPS with TLS termination',
+                    type: 'boolean',
+                    default: false,
+                    show_if: 'ingress.enabled=true',
+                    group: 'Ingress Configuration'
+                },
+                {
+                    variable: 'ingress.tls.secretName',
+                    label: 'TLS Secret Name',
+                    description: 'Name of the Kubernetes secret containing TLS certificate',
+                    type: 'string',
+                    show_if: 'ingress.tls.enabled=true',
+                    group: 'Ingress Configuration'
                 }
             ];
             
