@@ -2,8 +2,34 @@ apiVersion: v1
 entries:
   rancher-questions-generator:
   - apiVersion: v2
+    appVersion: 1.8.4
+    created: "2025-08-17T02:09:17.746183977Z"
+    description: A professional-grade web application for creating questions.yaml
+      files for Helm charts with an intuitive drag-and-drop interface, comprehensive
+      Kubernetes deployment patterns, and advanced template support
+    digest: c9f6e33b6c9e9257f1f4d4d160e9191adb5c92f96407622c40796f9b15dfb742
+    home: https://github.com/wiredquill/rancher-questions-generator
+    keywords:
+    - rancher
+    - helm
+    - questions
+    - charts
+    - kubernetes
+    - form-builder
+    - ui
+    maintainers:
+    - email: noreply@anthropic.com
+      name: Claude Code
+    name: rancher-questions-generator
+    sources:
+    - https://github.com/wiredquill/rancher-questions-generator
+    type: application
+    urls:
+    - https://github.com/wiredquill/rancher-questions-generator/releases/download/v1.8.4/rancher-questions-generator-1.8.4.tgz
+    version: 1.8.4
+  - apiVersion: v2
     appVersion: 1.8.3
-    created: "2025-08-17T00:08:24.053323178Z"
+    created: "2025-08-17T02:09:17.745634916Z"
     description: A professional-grade web application for creating questions.yaml
       files for Helm charts with an intuitive drag-and-drop interface, comprehensive
       Kubernetes deployment patterns, and advanced template support
@@ -25,11 +51,11 @@ entries:
     - https://github.com/wiredquill/rancher-questions-generator
     type: application
     urls:
-    - https://github.com/wiredquill/rancher-questions-generator/releases/download/v1.8.3/rancher-questions-generator-1.8.3.tgz
+    - https://github.com/wiredquill/rancher-questions-generator/releases/download/v1.8.4/rancher-questions-generator-1.8.3.tgz
     version: 1.8.3
   - apiVersion: v2
     appVersion: 1.8.2
-    created: "2025-08-17T00:08:24.052815895Z"
+    created: "2025-08-17T02:09:17.744231966Z"
     description: A professional-grade web application for creating questions.yaml
       files for Helm charts with an intuitive drag-and-drop interface, comprehensive
       Kubernetes deployment patterns, and advanced template support
@@ -51,11 +77,11 @@ entries:
     - https://github.com/wiredquill/rancher-questions-generator
     type: application
     urls:
-    - https://github.com/wiredquill/rancher-questions-generator/releases/download/v1.8.3/rancher-questions-generator-1.8.2.tgz
+    - https://github.com/wiredquill/rancher-questions-generator/releases/download/v1.8.4/rancher-questions-generator-1.8.2.tgz
     version: 1.8.2
   - apiVersion: v2
     appVersion: 1.8.1
-    created: "2025-08-17T00:08:24.052278314Z"
+    created: "2025-08-17T02:09:17.743684509Z"
     description: A professional-grade web application for creating questions.yaml
       files for Helm charts with an intuitive drag-and-drop interface, comprehensive
       Kubernetes deployment patterns, and advanced template support
@@ -77,11 +103,11 @@ entries:
     - https://github.com/wiredquill/rancher-questions-generator
     type: application
     urls:
-    - https://github.com/wiredquill/rancher-questions-generator/releases/download/v1.8.3/rancher-questions-generator-1.8.1.tgz
+    - https://github.com/wiredquill/rancher-questions-generator/releases/download/v1.8.4/rancher-questions-generator-1.8.1.tgz
     version: 1.8.1
   - apiVersion: v2
     appVersion: 1.8.0
-    created: "2025-08-17T00:08:24.051772183Z"
+    created: "2025-08-17T02:09:17.743118878Z"
     description: A professional-grade web application for creating questions.yaml
       files for Helm charts with an intuitive drag-and-drop interface, comprehensive
       Kubernetes deployment patterns, and advanced template support
@@ -103,11 +129,11 @@ entries:
     - https://github.com/wiredquill/rancher-questions-generator
     type: application
     urls:
-    - https://github.com/wiredquill/rancher-questions-generator/releases/download/v1.8.3/rancher-questions-generator-1.8.0.tgz
+    - https://github.com/wiredquill/rancher-questions-generator/releases/download/v1.8.4/rancher-questions-generator-1.8.0.tgz
     version: 1.8.0
   - apiVersion: v2
     appVersion: 1.7.0
-    created: "2025-08-17T00:08:24.05117421Z"
+    created: "2025-08-17T02:09:17.742570008Z"
     description: A professional-grade web application for creating questions.yaml
       files for Helm charts with an intuitive drag-and-drop interface, comprehensive
       Kubernetes deployment patterns, and advanced template support
@@ -129,11 +155,11 @@ entries:
     - https://github.com/wiredquill/rancher-questions-generator
     type: application
     urls:
-    - https://github.com/wiredquill/rancher-questions-generator/releases/download/v1.8.3/rancher-questions-generator-1.7.0.tgz
+    - https://github.com/wiredquill/rancher-questions-generator/releases/download/v1.8.4/rancher-questions-generator-1.7.0.tgz
     version: 1.7.0
   - apiVersion: v2
     appVersion: 1.6.0
-    created: "2025-08-17T00:08:24.050606594Z"
+    created: "2025-08-17T02:09:17.741901235Z"
     description: A professional-grade web application for creating questions.yaml
       files for Helm charts with an intuitive drag-and-drop interface, comprehensive
       Kubernetes deployment patterns, and advanced template support
@@ -155,11 +181,11 @@ entries:
     - https://github.com/wiredquill/rancher-questions-generator
     type: application
     urls:
-    - https://github.com/wiredquill/rancher-questions-generator/releases/download/v1.8.3/rancher-questions-generator-1.6.0.tgz
+    - https://github.com/wiredquill/rancher-questions-generator/releases/download/v1.8.4/rancher-questions-generator-1.6.0.tgz
     version: 1.6.0
   - apiVersion: v2
     appVersion: 1.5.0
-    created: "2025-08-17T00:08:24.049989917Z"
+    created: "2025-08-17T02:09:17.741258631Z"
     description: A professional-grade web application for creating questions.yaml
       files for Helm charts with an intuitive drag-and-drop interface, comprehensive
       Kubernetes deployment patterns, and advanced template support
@@ -181,6 +207,6 @@ entries:
     - https://github.com/wiredquill/rancher-questions-generator
     type: application
     urls:
-    - https://github.com/wiredquill/rancher-questions-generator/releases/download/v1.8.3/rancher-questions-generator-1.5.0.tgz
+    - https://github.com/wiredquill/rancher-questions-generator/releases/download/v1.8.4/rancher-questions-generator-1.5.0.tgz
     version: 1.5.0
-generated: "2025-08-17T00:08:24.049294653Z"
+generated: "2025-08-17T02:09:17.740494911Z"
